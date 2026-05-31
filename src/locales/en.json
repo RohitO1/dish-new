@@ -1,0 +1,92 @@
+{
+  "auth": {
+    "title": "Antigravity",
+    "subtitle": "Next-Gen AR Dining",
+    "mobilePlaceholder": "Mobile Number",
+    "enterEcosystem": "Enter Ecosystem"
+  },
+  "roles": {
+    "selectPortal": "Select Portal",
+    "dinerTitle": "Diner App",
+    "dinerDesc": "AR Menus & Ordering.",
+    "vendorTitle": "Restaurant SaaS",
+    "vendorDesc": "Operations & Analytics."
+  },
+  "nav": {
+    "menu": "Menu",
+    "scan": "Scan",
+    "cart": "Cart",
+    "orders": "Orders",
+    "health": "Health",
+    "settings": "Settings"
+  },
+  "scanner": {
+    "title": "Scan Table QR",
+    "simulate": "Simulate Scan"
+  },
+  "menu": {
+    "ar": "AR"
+  },
+  "dish": {
+    "addToOrder": "Add to Order",
+    "viewInAr": "View on your table (AR)"
+  },
+  "cart": {
+    "checkout": "Checkout",
+    "empty": "Cart is empty.",
+    "browseMenu": "Browse Menu",
+    "remove": "Remove",
+    "total": "Total",
+    "howToOrder": "How would you like to order?",
+    "dineIn": "Normal Dine-In",
+    "dineInDesc": "Order now. Kitchen starts cooking when you verify your table.",
+    "prepaid": "Prepaid Scheduled",
+    "prepaidDesc": "Pay now. Food will be ready exactly at your scheduled time.",
+    "paymentMethod": "Payment Method",
+    "upi": "UPI",
+    "upiDesc": "GPay, PhonePe, Paytm",
+    "card": "Credit / Debit Card",
+    "cardDesc": "Visa, Mastercard",
+    "cash": "Cash on Table",
+    "cashDesc": "Pay after meal",
+    "addTip": "Add a tip?",
+    "proceedToCheckout": "Proceed to Checkout",
+    "continueToPayment": "Continue to Payment",
+    "payAndPlace": "Pay & Place Order"
+  },
+  "orders": {
+    "liveTracking": "Live Tracking",
+    "noOrders": "No active orders.",
+    "scheduled": "Scheduled",
+    "dineIn": "Dine-In",
+    "waitingArrival": "Kitchen is waiting for your arrival.",
+    "imHere": "I'm Here - Start Cooking",
+    "total": "Total"
+  },
+  "vendor": {
+    "os": "Vendor OS",
+    "cloudSynced": "Cloud Synced",
+    "exit": "Exit",
+    "kitchenDisplay": "Kitchen display",
+    "analytics": "Analytics",
+    "menu3D": "3D Menu",
+    "qr": "QR",
+    "awaitingArrival": "Awaiting Arrival",
+    "cookQueue": "Cook Queue",
+    "startCooking": "Start Cooking",
+    "preparing": "Preparing",
+    "markReady": "Mark Ready",
+    "ready": "Ready",
+    "completeOrder": "Complete Order",
+    "grossRevenue": "Gross Revenue",
+    "ordersCompleted": "Orders Completed",
+    "recentTransactions": "Recent Transactions",
+    "manageAssets": "Manage 3D Assets"
+  },
+  "settings": {
+    "title": "Settings & Preferences",
+    "language": "Language",
+    "goals": "Daily Dietary Goals",
+    "saveGoals": "Save Goals"
+  }
+}

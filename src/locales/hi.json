@@ -1,0 +1,92 @@
+{
+  "auth": {
+    "title": "Antigravity",
+    "subtitle": "नई पीढ़ी की AR डाइनिंग",
+    "mobilePlaceholder": "मोबाइल नंबर",
+    "enterEcosystem": "इकोसिस्टम में प्रवेश करें"
+  },
+  "roles": {
+    "selectPortal": "पोर्टल चुनें",
+    "dinerTitle": "डाइनर ऐप",
+    "dinerDesc": "AR मेनू और ऑर्डर",
+    "vendorTitle": "रेस्टोरेंट SaaS",
+    "vendorDesc": "संचालन और विश्लेषण"
+  },
+  "nav": {
+    "menu": "मेनू",
+    "scan": "स्कैन",
+    "cart": "कार्ट",
+    "orders": "ऑर्डर",
+    "health": "स्वास्थ्य",
+    "settings": "सेटिंग्स"
+  },
+  "scanner": {
+    "title": "टेबल QR स्कैन करें",
+    "simulate": "स्कैन सिमुलेट करें"
+  },
+  "menu": {
+    "ar": "AR"
+  },
+  "dish": {
+    "addToOrder": "ऑर्डर में जोड़ें",
+    "viewInAr": "अपनी टेबल पर देखें (AR)"
+  },
+  "cart": {
+    "checkout": "चेकआउट",
+    "empty": "कार्ट खाली है।",
+    "browseMenu": "मेनू देखें",
+    "remove": "हटाएं",
+    "total": "कुल",
+    "howToOrder": "आप कैसे ऑर्डर करना चाहेंगे?",
+    "dineIn": "सामान्य डाइन-इन",
+    "dineInDesc": "अभी ऑर्डर करें। आपके टेबल पर आने के बाद खाना बनना शुरू होगा।",
+    "prepaid": "प्रीपेड शेड्यूल्ड",
+    "prepaidDesc": "अभी भुगतान करें। खाना आपके निर्धारित समय पर तैयार रहेगा।",
+    "paymentMethod": "भुगतान विधि",
+    "upi": "UPI",
+    "upiDesc": "GPay, PhonePe, Paytm",
+    "card": "क्रेडिट / डेबिट कार्ड",
+    "cardDesc": "Visa, Mastercard",
+    "cash": "नकद",
+    "cashDesc": "खाने के बाद भुगतान",
+    "addTip": "टिप दें?",
+    "proceedToCheckout": "चेकआउट के लिए आगे बढ़ें",
+    "continueToPayment": "भुगतान के लिए आगे बढ़ें",
+    "payAndPlace": "भुगतान करें और ऑर्डर दें"
+  },
+  "orders": {
+    "liveTracking": "लाइव ट्रैकिंग",
+    "noOrders": "कोई सक्रिय ऑर्डर नहीं।",
+    "scheduled": "निर्धारित",
+    "dineIn": "डाइन-इन",
+    "waitingArrival": "रसोई आपके आने की प्रतीक्षा कर रही है।",
+    "imHere": "मैं आ गया - खाना बनाना शुरू करें",
+    "total": "कुल"
+  },
+  "vendor": {
+    "os": "वेंडर OS",
+    "cloudSynced": "क्लाउड सिंक",
+    "exit": "बाहर जाएं",
+    "kitchenDisplay": "किचन डिस्प्ले",
+    "analytics": "एनालिटिक्स",
+    "menu3D": "3D मेनू",
+    "qr": "QR",
+    "awaitingArrival": "आगमन की प्रतीक्षा",
+    "cookQueue": "कुक कतार",
+    "startCooking": "खाना पकाना शुरू करें",
+    "preparing": "तैयार हो रहा है",
+    "markReady": "तैयार करें",
+    "ready": "तैयार",
+    "completeOrder": "ऑर्डर पूरा करें",
+    "grossRevenue": "कुल राजस्व",
+    "ordersCompleted": "ऑर्डर पूरे हुए",
+    "recentTransactions": "हाल के लेनदेन",
+    "manageAssets": "3D संपत्तियों का प्रबंधन करें"
+  },
+  "settings": {
+    "title": "सेटिंग्स और प्राथमिकताएं",
+    "language": "भाषा",
+    "goals": "दैनिक आहार लक्ष्य",
+    "saveGoals": "लक्ष्य सहेजें"
+  }
+}

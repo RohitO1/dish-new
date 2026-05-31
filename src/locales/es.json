@@ -1,0 +1,92 @@
+{
+  "auth": {
+    "title": "Antigravity",
+    "subtitle": "Gastronomía AR",
+    "mobilePlaceholder": "Número Móvil",
+    "enterEcosystem": "Entrar al Ecosistema"
+  },
+  "roles": {
+    "selectPortal": "Seleccionar Portal",
+    "dinerTitle": "App Cliente",
+    "dinerDesc": "Menús AR y Pedidos.",
+    "vendorTitle": "Restaurante SaaS",
+    "vendorDesc": "Operaciones y Análisis."
+  },
+  "nav": {
+    "menu": "Menú",
+    "scan": "Escanear",
+    "cart": "Carrito",
+    "orders": "Pedidos",
+    "health": "Salud",
+    "settings": "Ajustes"
+  },
+  "scanner": {
+    "title": "Escanear QR de Mesa",
+    "simulate": "Simular Escaneo"
+  },
+  "menu": {
+    "ar": "RA"
+  },
+  "dish": {
+    "addToOrder": "Añadir al Pedido",
+    "viewInAr": "Ver en tu mesa (RA)"
+  },
+  "cart": {
+    "checkout": "Pagar",
+    "empty": "El carrito está vacío.",
+    "browseMenu": "Ver Menú",
+    "remove": "Quitar",
+    "total": "Total",
+    "howToOrder": "¿Cómo quieres pedir?",
+    "dineIn": "Comer aquí",
+    "dineInDesc": "Pide ahora. La cocina empieza cuando llegues.",
+    "prepaid": "Programado Pre-pago",
+    "prepaidDesc": "Paga ahora. La comida estará lista a tu hora.",
+    "paymentMethod": "Método de Pago",
+    "upi": "Transferencia",
+    "upiDesc": "Pagos móviles",
+    "card": "Tarjeta de Crédito / Débito",
+    "cardDesc": "Visa, Mastercard",
+    "cash": "Efectivo",
+    "cashDesc": "Paga después",
+    "addTip": "¿Añadir propina?",
+    "proceedToCheckout": "Ir a Pagar",
+    "continueToPayment": "Continuar al Pago",
+    "payAndPlace": "Pagar y Pedir"
+  },
+  "orders": {
+    "liveTracking": "Seguimiento",
+    "noOrders": "Sin pedidos activos.",
+    "scheduled": "Programado",
+    "dineIn": "Comer aquí",
+    "waitingArrival": "La cocina espera tu llegada.",
+    "imHere": "Ya llegué - Empezar",
+    "total": "Total"
+  },
+  "vendor": {
+    "os": "Sistema Vendedor",
+    "cloudSynced": "Sincronizado",
+    "exit": "Salir",
+    "kitchenDisplay": "Cocina",
+    "analytics": "Análisis",
+    "menu3D": "Menú 3D",
+    "qr": "QR",
+    "awaitingArrival": "Esperando Llegada",
+    "cookQueue": "Fila",
+    "startCooking": "Cocinar",
+    "preparing": "Preparando",
+    "markReady": "Listo",
+    "ready": "Listo",
+    "completeOrder": "Completar",
+    "grossRevenue": "Ingresos",
+    "ordersCompleted": "Pedidos",
+    "recentTransactions": "Transacciones Recientes",
+    "manageAssets": "Gestión 3D"
+  },
+  "settings": {
+    "title": "Ajustes y Preferencias",
+    "language": "Idioma",
+    "goals": "Metas Diarias",
+    "saveGoals": "Guardar Metas"
+  }
+}
