@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ChefHat, Mail, Lock, Eye, EyeOff, User, Loader2, ArrowLeft } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { auth, createUserWithEmailAndPassword, signInWithEmailAndPassword, updateProfile } from '../services/firebase';
-import { sendPasswordResetEmail } from 'firebase/auth';
+import { supabase } from '../services/supabase';
 import { useAppContext } from '../context/AppContext';
 
 export default function VendorAuthPage() {
@@ -23,25 +22,20 @@ export default function VendorAuthPage() {
     if (!email) { setError('Enter your email above, then click Forgot Password.'); return; }
     setLoading(true); setError('');
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email);
+      if (error) throw error;
       setResetSent(true);
     } catch (err) {
-      setError(friendlyError(err.code));
+      setError(friendlyError(err.message));
     }
     setLoading(false);
   };
 
-  const friendlyError = (code) => {
-    switch (code) {
-      case 'auth/email-already-in-use': return 'This email is already registered. Try logging in instead.';
-      case 'auth/invalid-email': return 'Please enter a valid email address.';
-      case 'auth/weak-password': return 'Password must be at least 6 characters long.';
-      case 'auth/user-not-found': return 'No account found with this email. Register instead?';
-      case 'auth/wrong-password': return 'Incorrect password. Please try again.';
-      case 'auth/invalid-credential': return 'Email or password is incorrect. Please check and try again.';
-      case 'auth/too-many-requests': return 'Too many failed attempts. Please try again later.';
-      default: return 'Something went wrong. Please try again.';
-    }
+  const friendlyError = (msg) => {
+    if (msg.includes('already registered')) return 'This email is already registered. Try logging in instead.';
+    if (msg.includes('Invalid login credentials')) return 'Email or password is incorrect. Please check and try again.';
+    if (msg.includes('weak')) return 'Password must be at least 6 characters long.';
+    return msg || 'Something went wrong. Please try again.';
   };
 
   const handleRegister = async (e) => {
@@ -50,12 +44,16 @@ export default function VendorAuthPage() {
     setLoading(true);
     setError('');
     try {
-      const cred = await createUserWithEmailAndPassword(auth, email, password);
-      await updateProfile(cred.user, { displayName });
-      setUser({ email: cred.user.email, uid: cred.user.uid, displayName, role: 'vendor' });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { data: { displayName } }
+      });
+      if (error) throw error;
+      // Supabase context handles setting user session
       navigate('/vendor-onboard');
     } catch (err) {
-      setError(friendlyError(err.code));
+      setError(friendlyError(err.message));
     }
     setLoading(false);
   };
@@ -65,11 +63,11 @@ export default function VendorAuthPage() {
     setLoading(true);
     setError('');
     try {
-      const cred = await signInWithEmailAndPassword(auth, email, password);
-      setUser({ email: cred.user.email, uid: cred.user.uid, displayName: cred.user.displayName, role: 'vendor' });
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
       navigate('/vendor-onboard');
     } catch (err) {
-      setError(friendlyError(err.code));
+      setError(friendlyError(err.message));
     }
     setLoading(false);
   };
@@ -191,7 +189,7 @@ export default function VendorAuthPage() {
         </motion.form>
 
         <p className="text-center text-xs text-neutral-600 mt-6">
-          🔒 Secured by Firebase Authentication · 100% Free
+          🔒 Secured by Supabase Authentication · 100% Free
         </p>
       </div>
     </motion.div>

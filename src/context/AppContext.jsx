@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import i18n from '../locales/i18n';
-import { auth, db, appId, signInAnonymously, signInWithCustomToken, onAuthStateChanged, collection, onSnapshot, addDoc, updateDoc, doc, INITIAL_DISHES, INITIAL_RESTAURANTS } from '../services/firebase';
+import { supabase, INITIAL_DISHES, INITIAL_RESTAURANTS } from '../services/supabase';
 
 const AppContext = createContext();
 
 export const useAppContext = () => useContext(AppContext);
 
 export const AppProvider = ({ children }) => {
-  const [firebaseUser, setFirebaseUser] = useState(null);
+  const [supabaseUser, setSupabaseUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Core State
   const [user, setUser] = useState(null); 
-  const [activeRestId, setActiveRestId] = useState(null); // null = must scan QR first
+  const [activeRestId, setActiveRestId] = useState(null);
   const [activeDishId, setActiveDishId] = useState(null);
   
   // Data State
@@ -49,35 +49,31 @@ export const AppProvider = ({ children }) => {
 
   // 1. Auth Init
   useEffect(() => {
-    if (!auth) { 
+    if (!supabase) { 
       setIsInitializing(false); 
       return; 
     }
-    const initAuth = async () => {
-      try {
-        if (typeof window !== 'undefined' && window.__initial_auth_token) {
-          await signInWithCustomToken(auth, window.__initial_auth_token);
-        } else { 
-          await signInAnonymously(auth); 
-        }
-      } catch (err) { console.error("Auth error:", err); }
-    };
-    initAuth();
-    
-    const unsubscribe = onAuthStateChanged(auth, (u) => {
-      setFirebaseUser(u);
-      // If a Firebase user is already signed in with email (returning vendor), restore their session
-      if (u && u.email && !user) {
-        setUser(prev => prev || { 
-          email: u.email, 
-          uid: u.uid, 
-          displayName: u.displayName, 
-          role: 'vendor' 
-        });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      const u = session?.user || null;
+      setSupabaseUser(u);
+      if (u) {
+        setUser({ email: u.email, uid: u.id, role: 'vendor' });
       }
       setIsInitializing(false);
     });
-    return () => unsubscribe();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      const u = session?.user || null;
+      setSupabaseUser(u);
+      if (u) {
+        setUser({ email: u.email, uid: u.id, role: 'vendor' });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   // Sync language on mount
@@ -89,35 +85,42 @@ export const AppProvider = ({ children }) => {
 
   // 2. Real-time Sync
   useEffect(() => {
-    if (!firebaseUser || !db) return;
+    if (!supabase) return;
     
-    const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-    const unsubOrders = onSnapshot(ordersRef, (snapshot) => {
-      const fetchedOrders = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      fetchedOrders.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // Newest first
-      setOrders(fetchedOrders);
-    });
+    const fetchOrders = async () => {
+      const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
+      if (data) setOrders(data);
+    };
+    
+    const fetchDishes = async () => {
+      const { data } = await supabase.from('dishes').select('*');
+      if (data) setDishes(data);
+    };
 
-    const dishesRef = collection(db, 'artifacts', appId, 'public', 'data', 'dishes');
-    const unsubDishes = onSnapshot(dishesRef, (snapshot) => {
-      if (!snapshot.empty) {
-        setDishes(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    });
+    const fetchRestaurants = async () => {
+      const { data } = await supabase.from('restaurants').select('*');
+      if (data) setRestaurants(data);
+    };
 
-    const restRef = collection(db, 'artifacts', appId, 'public', 'data', 'restaurants');
-    const unsubRest = onSnapshot(restRef, (snapshot) => {
-      if (!snapshot.empty) {
-        setRestaurants(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
-      }
-    });
+    fetchOrders();
+    fetchDishes();
+    fetchRestaurants();
+
+    const ordersSub = supabase.channel('custom-orders')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, fetchOrders).subscribe();
+      
+    const dishesSub = supabase.channel('custom-dishes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'dishes' }, fetchDishes).subscribe();
+
+    const restSub = supabase.channel('custom-restaurants')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'restaurants' }, fetchRestaurants).subscribe();
     
     return () => { 
-      unsubOrders(); 
-      unsubDishes(); 
-      unsubRest();
+      supabase.removeChannel(ordersSub);
+      supabase.removeChannel(dishesSub);
+      supabase.removeChannel(restSub);
     };
-  }, [firebaseUser]);
+  }, [supabaseUser]);
 
   const showNotification = (msg) => {
     setNotification(msg);
@@ -155,138 +158,127 @@ export const AppProvider = ({ children }) => {
       macros,
     };
     setNutritionHistory(prev => {
-      const next = [record, ...prev].slice(0, 30); // keep last 30
+      const next = [record, ...prev].slice(0, 30);
       localStorage.setItem('3dish_nutrition_history', JSON.stringify(next));
       return next;
     });
   };
 
   const placeOrder = async (orderData) => {
-    if (!firebaseUser && auth) {
+    if (!supabase) {
       showNotification("Cloud connection required.");
       return false;
     }
     
     const rest = restaurants.find(r => r.id === activeRestId);
-    const taxRate = rest?.taxRate !== undefined ? rest.taxRate / 100 : 0.08;
+    const taxRate = rest?.tax_rate !== undefined ? rest.tax_rate / 100 : 0.08;
 
     const newOrder = {
-      userId: user?.uid || user?.phone || 'anonymous',
-      restId: activeRestId,
+      user_id: user?.uid || user?.phone || 'anonymous',
+      rest_id: activeRestId,
       items: cart,
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
+      status: 'Pending',
       timestamp: new Date().toISOString(),
       ...orderData
     };
 
     try {
-      if (db) {
-        const ordersRef = collection(db, 'artifacts', appId, 'public', 'data', 'orders');
-        await addDoc(ordersRef, newOrder);
-      } else {
-        // Mock DB update if no firebase config
-        setOrders(prev => [{id: Date.now().toString(), ...newOrder}, ...prev]);
-      }
+      const { error } = await supabase.from('orders').insert([newOrder]);
+      if (error) throw error;
+      
       setCart([]);
       const restName = restaurants.find(r => r.id === activeRestId)?.name || 'Restaurant';
       saveNutritionRecord(cart, restName);
       showNotification('Order successfully transmitted!');
       return true;
     } catch (error) { 
+      console.error(error);
       showNotification('Failed to transmit order.');
       return false;
     }
   };
 
   const addRestaurant = async (restData) => {
-    if (!firebaseUser && auth) return null;
+    if (!supabaseUser) return null;
     
     const newRest = {
-      vendorId: user?.uid || user?.phone || 'anonymous',
-      ...restData
+      vendor_id: supabaseUser.id,
+      name: restData.name,
+      cover: restData.cover,
+      tax_rate: restData.taxRate,
+      accept_cash: restData.acceptCash
     };
 
     try {
-      if (db) {
-        const restRef = collection(db, 'artifacts', appId, 'public', 'data', 'restaurants');
-        const docRef = await addDoc(restRef, newRest);
-        return docRef.id;
-      } else {
-        const mockId = 'rest-' + Date.now();
-        setRestaurants(prev => [...prev, { id: mockId, ...newRest }]);
-        return mockId;
-      }
+      const { data, error } = await supabase.from('restaurants').insert([newRest]).select();
+      if (error) throw error;
+      return data[0].id;
     } catch (error) {
+      console.error(error);
       showNotification('Failed to create restaurant.');
       return null;
     }
   };
 
   const updateRestaurant = async (restId, updateData) => {
-    if (!firebaseUser && auth) return;
+    if (!supabaseUser) return;
     try {
-      if (db) {
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'restaurants', restId);
-        await updateDoc(docRef, updateData);
-      } else {
-        setRestaurants(prev => prev.map(r => r.id === restId ? { ...r, ...updateData } : r));
-      }
+      const { error } = await supabase.from('restaurants')
+        .update({
+          name: updateData.name,
+          cover: updateData.cover,
+          tax_rate: updateData.taxRate,
+          accept_cash: updateData.acceptCash
+        })
+        .eq('id', restId);
+      if (error) throw error;
       showNotification('Settings updated successfully!');
     } catch (error) {
+      console.error(error);
       showNotification('Failed to update settings.');
     }
   };
 
   const addDish = async (dishData) => {
-    if (!firebaseUser && auth) return null;
+    if (!supabaseUser) return null;
     try {
-      if (db) {
-        const dishesRef = collection(db, 'artifacts', appId, 'public', 'data', 'dishes');
-        const docRef = await addDoc(dishesRef, dishData);
-        return docRef.id;
-      } else {
-        const mockId = 'dish-' + Date.now();
-        setDishes(prev => [...prev, { id: mockId, ...dishData }]);
-        return mockId;
-      }
+      const { data, error } = await supabase.from('dishes').insert([dishData]).select();
+      if (error) throw error;
+      return data[0].id;
     } catch (error) {
+      console.error(error);
       showNotification('Failed to save dish.');
       return null;
     }
   };
 
   const updateDish = async (dishId, updates) => {
-    if (!firebaseUser && auth) return;
+    if (!supabaseUser) return;
     try {
-      if (db) {
-        const dishRef = doc(db, 'artifacts', appId, 'public', 'data', 'dishes', dishId);
-        await updateDoc(dishRef, updates);
-      } else {
-        setDishes(prev => prev.map(d => d.id === dishId ? { ...d, ...updates } : d));
-      }
+      const { error } = await supabase.from('dishes').update(updates).eq('id', dishId);
+      if (error) throw error;
       showNotification('Dish updated successfully.');
     } catch (error) {
+      console.error(error);
       showNotification('Failed to update dish.');
     }
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
-    if (!firebaseUser && auth) return;
+    if (!supabaseUser) return;
     try {
-      if (db) {
-        const orderRef = doc(db, 'artifacts', appId, 'public', 'data', 'orders', orderId);
-        await updateDoc(orderRef, { status: newStatus });
-      } else {
-        setOrders(prev => prev.map(o => o.id === orderId ? {...o, status: newStatus} : o));
-      }
+      const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
+      if (error) throw error;
       showNotification(`Order moved to: ${newStatus}`);
     } catch (error) { 
+      console.error(error);
       showNotification('Failed to update status.'); 
     }
   };
 
   const value = {
-    firebaseUser,
+    supabaseUser,
     isInitializing,
     user, setUser,
     activeRestId, setActiveRestId,

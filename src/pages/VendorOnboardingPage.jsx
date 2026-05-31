@@ -51,7 +51,7 @@ export default function VendorOnboardingPage() {
       navigate('/vendor');
     } else {
       setLoading(false);
-      alert("Failed to create restaurant. Please check if Anonymous Authentication is enabled in your Firebase Console.");
+      alert("Failed to create restaurant. Please check your Supabase connection.");
     }
   };
 

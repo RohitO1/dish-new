@@ -5,20 +5,22 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
-import { auth, signOut } from '../services/firebase';
-import { generateModelFromImage } from '../services/meshy';
+import { supabase } from '../services/supabase';
+import { generateModelFromImage } from '../services/tripo';
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
   const { orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus, dishes, restaurants, addDish, updateDish, user, setUser, updateRestaurant } = useAppContext();
   const { t } = useTranslation();
 
-  const handleSignOut = async () => {
+  const handleLogout = async () => {
     try {
-      if (auth) await signOut(auth);
-    } catch (_) {}
-    setUser(null);
-    navigate('/vendor-auth', { replace: true });
+      await supabase.auth.signOut();
+      setUser(null);
+      navigate('/');
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -29,6 +31,7 @@ export default function VendorDashboardPage() {
   const [scanStageLabel, setScanStageLabel] = React.useState('');
   const [progress, setProgress]             = React.useState(0);
   const fileInputRef   = React.useRef(null);
+  const glbInputRef    = React.useRef(null);
   const dishCameraRef  = React.useRef(null);
   const [cameraOpen, setCameraOpen]     = React.useState(false);
   const [cameraStream, setCameraStream] = React.useState(null);
@@ -63,7 +66,7 @@ export default function VendorDashboardPage() {
   // Allergens state (part of editingDish)
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy'];
 
-  // Real Meshy.ai processing (with demo fallback when no API key)
+  // Real Tripo3D processing (with demo fallback when no API key)
   const startAiProcessing = React.useCallback(async (imageFile = null) => {
     setScanState('uploading');
     setScanStageLabel('Uploading media...');
@@ -72,22 +75,17 @@ export default function VendorDashboardPage() {
       const glbUrl = await generateModelFromImage(imageFile, (pct, stage) => {
         setProgress(pct);
         const labels = {
-          UPLOADING:        'Uploading media...',
-          EXTRACTING_POINTS:'Extracting point cloud...',
-          GENERATING_MESH:  'Generating 3D mesh...',
-          TEXTURING:        'Applying photorealistic textures...',
-          SUCCEEDED:        '3D AR Model ready!',
-          // legacy local simulation stages
-          uploading:  'Uploading media...',
-          scanning:   'Extracting point cloud...',
-          processing: 'Generating 3D mesh...',
+          queued:     'Queued on Tripo servers...',
+          uploading:  'Uploading image...',
+          running:    'Generating 3D model...',
           texturing:  'Applying photorealistic textures...',
+          success:    '3D AR Model ready!',
         };
         setScanStageLabel(labels[stage] || stage);
-        if (pct < 100) setScanState(stage.toLowerCase().includes('text') ? 'texturing'
-          : stage.toLowerCase().includes('mesh') || stage.toLowerCase().includes('process') ? 'processing'
-          : stage.toLowerCase().includes('point') || stage.toLowerCase().includes('scan')   ? 'scanning'
-          : 'uploading');
+        if (pct < 100) setScanState(stage === 'queued' ? 'uploading' 
+          : stage === 'running' ? 'processing' 
+          : stage === 'texturing' ? 'texturing'
+          : 'scanning');
       });
       setScanState('complete');
       setProgress(100);
@@ -132,6 +130,38 @@ export default function VendorDashboardPage() {
     setCameraOpen(false);
   };
 
+  const uploadGlbFile = async (file) => {
+    if (!supabase) {
+      alert("Supabase is not configured. Please check your .env settings.");
+      return;
+    }
+    setScanState('uploading');
+    setScanStageLabel('Uploading .glb model...');
+    setProgress(30);
+
+    try {
+      const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
+      const { data, error } = await supabase.storage
+        .from('models')
+        .upload(filePath, file, { cacheControl: '3600', upsert: false });
+
+      if (error) throw error;
+
+      const { data: publicUrlData } = supabase.storage
+        .from('models')
+        .getPublicUrl(filePath);
+
+      setEditingDish(prev => prev ? { ...prev, modelUrl: publicUrlData.publicUrl } : prev);
+      setScanState('complete');
+      setScanStageLabel('3D Model Uploaded Successfully!');
+      setProgress(100);
+    } catch (error) {
+      console.error("Upload failed", error);
+      setScanState('idle');
+      alert("Upload failed. Make sure you created the 'models' bucket in your Supabase Storage.");
+    }
+  };
+
   const restOrders = orders.filter(o => o.restId === activeRestId);
   const awaitingArrival = restOrders.filter(o => o.status === 'Awaiting Arrival');
   const pending = restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled');
@@ -157,7 +187,7 @@ export default function VendorDashboardPage() {
             <p className="text-xs text-emerald-600 font-bold flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{user?.email || t('vendor.cloudSynced')}</p>
           </div>
         </div>
-        <button onClick={handleSignOut} className="text-sm font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
+        <button onClick={handleLogout} className="text-sm font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
           <LogOut size={15} /> Sign Out
         </button>
       </div>
@@ -362,9 +392,15 @@ export default function VendorDashboardPage() {
                   <label className="block text-sm font-bold text-neutral-700 mb-2 flex justify-between items-end">
                     <span>3D Model URL (.glb)</span>
                     <div className="flex gap-2">
+                      <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={(e) => {
+                        if (e.target.files[0]) uploadGlbFile(e.target.files[0]);
+                      }} />
                       <input type="file" accept="video/*,image/*" className="hidden" ref={fileInputRef} onChange={(e) => {
                         if (e.target.files[0]) startAiProcessing(e.target.files[0]);
                       }} />
+                      <button type="button" onClick={() => glbInputRef.current?.click()} className="text-xs bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-emerald-200 transition-colors">
+                        <Upload size={14} /> Upload .glb
+                      </button>
                       <button type="button" onClick={openDishCamera} className="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-purple-200 transition-colors">
                         <Camera size={14} /> Scan Dish
                       </button>
