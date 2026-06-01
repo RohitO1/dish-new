@@ -74,7 +74,14 @@ export const AppProvider = ({ children }) => {
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
-        setUser(prev => ({ ...prev, email: u.email, uid: u.id, role: 'vendor' }));
+        // Only assign vendor role if user doesn't already have a diner role
+        setUser(prev => {
+          if (prev?.role === 'diner') {
+            // Diner signed in via Google for pre-order — keep diner role, just enrich
+            return { ...prev, email: u.email, uid: u.id };
+          }
+          return { ...prev, email: u.email, uid: u.id, role: 'vendor' };
+        });
       }
       setIsInitializing(false);
     });
@@ -83,9 +90,14 @@ export const AppProvider = ({ children }) => {
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
-        setUser(prev => ({ ...prev, email: u.email, uid: u.id, role: 'vendor' }));
+        setUser(prev => {
+          if (prev?.role === 'diner') {
+            return { ...prev, email: u.email, uid: u.id };
+          }
+          return { ...prev, email: u.email, uid: u.id, role: 'vendor' };
+        });
       } else {
-        setUser(prev => (prev?.role === 'vendor' ? null : prev)); // Only clear user if they were a vendor
+        setUser(prev => (prev?.role === 'vendor' ? null : prev));
       }
     });
 
@@ -192,7 +204,7 @@ export const AppProvider = ({ children }) => {
 
   const placeOrder = async (orderData) => {
     if (!supabase) {
-      showNotification("Cloud connection required.");
+      showNotification('Cloud connection required.');
       return false;
     }
     
@@ -201,7 +213,8 @@ export const AppProvider = ({ children }) => {
 
     const newOrder = {
       user_id: user?.uid || user?.phone || 'anonymous',
-      rest_id: activeRestId,
+      rest_id: activeRestId,  // Supabase column (snake_case)
+      restId: activeRestId,   // local filtering (camelCase)
       items: cart,
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
       status: 'Pending',
@@ -216,11 +229,11 @@ export const AppProvider = ({ children }) => {
       setCart([]);
       const restName = restaurants.find(r => r.id === activeRestId)?.name || 'Restaurant';
       saveNutritionRecord(cart, restName);
-      showNotification('Order successfully transmitted!');
+      showNotification('Order placed successfully!');
       return true;
     } catch (error) { 
       console.error(error);
-      showNotification('Failed to transmit order.');
+      showNotification('Failed to place order.');
       return false;
     }
   };
@@ -292,7 +305,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateOrderStatus = async (orderId, newStatus) => {
-    if (!supabaseUser) return;
+    if (!supabase) return;
     try {
       const { error } = await supabase.from('orders').update({ status: newStatus }).eq('id', orderId);
       if (error) throw error;

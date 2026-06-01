@@ -96,6 +96,8 @@ export default function CartPage() {
     
     setIsProcessing(false);
     if (success) {
+      sessionStorage.removeItem('cart_step');
+      sessionStorage.removeItem('cart_orderConf');
       if (orderConf.type === 'prepaid') {
         setStep('success');
       } else {

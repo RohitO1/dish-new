@@ -14,9 +14,12 @@ export default function VendorOnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // Check if user already has a restaurant
-    if (user && restaurants) {
-      const existing = restaurants.find(r => r.vendorId === (user.uid || user.phone));
+    // Check if user already has a restaurant — handle both camelCase (local) and snake_case (Supabase)
+    if (user && restaurants && restaurants.length > 0) {
+      const uid = user.uid || user.phone;
+      const existing = restaurants.find(r => 
+        r.vendor_id === uid || r.vendorId === uid
+      );
       if (existing) {
         setActiveRestId(existing.id);
         navigate('/vendor', { replace: true });

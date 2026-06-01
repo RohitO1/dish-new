@@ -10,7 +10,7 @@ const FILTER_TABS = ['All', 'Vegan', 'High Protein', 'Low Calorie', 'Favorites']
 
 export default function MenuPage() {
   const navigate = useNavigate();
-  const { activeRestId, dishes, setActiveDishId, restaurants, setActiveRestId, favorites, toggleFavorite } = useAppContext();
+  const { activeRestId, dishes, setActiveDishId, restaurants, setActiveRestId, favorites, toggleFavorite, addToCart } = useAppContext();
   const { t } = useTranslation();
   const [search, setSearch]     = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
@@ -143,12 +143,19 @@ export default function MenuPage() {
                 </div>
               </div>
 
-              {/* Heart button */}
-              <motion.button whileTap={{ scale: 1.4 }}
-                onClick={e => { e.stopPropagation(); toggleFavorite(dish.id); }}
-                className="shrink-0 p-2 rounded-full hover:bg-neutral-800 transition-colors">
-                <Heart size={18} className={favorites.includes(dish.id) ? 'text-red-500 fill-red-500' : 'text-neutral-600'} />
-              </motion.button>
+              {/* Heart button + Quick Add */}
+              <div className="flex flex-col items-center gap-2 shrink-0">
+                <motion.button whileTap={{ scale: 1.4 }}
+                  onClick={e => { e.stopPropagation(); toggleFavorite(dish.id); }}
+                  className="p-2 rounded-full hover:bg-neutral-800 transition-colors">
+                  <Heart size={18} className={favorites.includes(dish.id) ? 'text-red-500 fill-red-500' : 'text-neutral-600'} />
+                </motion.button>
+                <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}
+                  onClick={e => { e.stopPropagation(); addToCart(dish); }}
+                  className="w-8 h-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full flex items-center justify-center transition-colors shadow-lg shadow-blue-600/30">
+                  <span className="text-lg leading-none font-black">+</span>
+                </motion.button>
+              </div>
             </motion.div>
           ))}
         </AnimatePresence>
