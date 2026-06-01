@@ -5,8 +5,6 @@ import { AppProvider, useAppContext } from './context/AppContext';
 import Notification from './components/Notification';
 
 // Lazy-load all pages for code-splitting (eliminates the chunk size warning)
-const AuthPage            = React.lazy(() => import('./pages/AuthPage'));
-const RoleSelectPage      = React.lazy(() => import('./pages/RoleSelectPage'));
 const ScannerPage         = React.lazy(() => import('./pages/ScannerPage'));
 const MenuPage            = React.lazy(() => import('./pages/MenuPage'));
 const Dish3DPage          = React.lazy(() => import('./pages/Dish3DPage'));
@@ -41,8 +39,6 @@ function AnimatedRoutes() {
     <AnimatePresence mode="wait">
       <Routes>
         <Route path="/" element={<RootRedirect />} />
-        <Route path="/auth"        element={<AuthPage />} />
-        <Route path="/role-select" element={<RoleSelectPage />} />
 
         {/* Diner Routes */}
         <Route path="/scanner"     element={<ScannerPage />} />

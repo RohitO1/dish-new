@@ -198,6 +198,15 @@ export default function ScannerPage() {
         </AnimatePresence>
       </div>
 
+      {/* Vendor Login Link */}
+      {!scanned && (
+        <div className="relative z-20 pb-8 text-center">
+          <button onClick={() => navigate('/vendor-auth')} className="text-neutral-500 hover:text-white text-xs font-medium transition-colors">
+            Restaurant Partner? Sign in here.
+          </button>
+        </div>
+      )}
+
       {/* NO BottomNav here — scanner is a gate, not a tab */}
     </motion.div>
   );
