@@ -1,5 +1,5 @@
 import React from 'react';
-import { MapPin, CheckCircle2, Clock, ChefHat } from 'lucide-react';
+import { MapPin, CheckCircle2, Clock, ChefHat, ShieldCheck, XCircle, Bell } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -12,11 +12,11 @@ const STATUS_STEPS = [
 ];
 
 function OrderTimeline({ currentStatus }) {
-  // If it's awaiting arrival, don't show the timeline yet
-  if (currentStatus === 'Awaiting Arrival') return null;
+  // Don't show timeline for verification or cancelled states
+  if (currentStatus === 'Pending Verification' || currentStatus === 'Cancelled') return null;
   
   const currentIndex = STATUS_STEPS.findIndex(s => s.id === currentStatus);
-  const activeIndex = currentIndex === -1 ? 0 : currentIndex; // Default to 0 if unknown
+  const activeIndex = currentIndex === -1 ? 0 : currentIndex;
 
   return (
     <div className="relative flex justify-between items-center mt-6 mb-8 px-2">
@@ -58,10 +58,22 @@ function OrderTimeline({ currentStatus }) {
 }
 
 export default function DinerOrdersPage() {
-  const { orders, user, updateOrderStatus, restaurants } = useAppContext();
+  const { orders, user, restaurants } = useAppContext();
   const { t } = useTranslation();
 
-  const myOrders = orders.filter(o => o.userId === user?.phone);
+  // Helper for sequential order number
+  const getOrderNumber = (order) => {
+    const vendorOrders = orders.filter(o => o.restId === (order.restId || order.rest_id) || o.rest_id === (order.restId || order.rest_id))
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const index = vendorOrders.findIndex(o => o.id === order.id);
+    return index !== -1 ? `Order #${String(index + 1).padStart(3, '0')}` : `#${order.id.slice(-3)}`;
+  };
+
+  // Match orders by user_id (supports anonymous phone-based IDs and uid-based IDs)
+  const myOrders = orders.filter(o => {
+    const userId = o.user_id || o.userId;
+    return userId === user?.uid || userId === user?.phone || userId === user?.email || userId === 'anonymous';
+  });
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-screen bg-neutral-950 text-white pb-24">
@@ -85,27 +97,47 @@ export default function DinerOrdersPage() {
             >
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <span className="font-black text-xl">{restaurants.find(r => r.id === order.restId)?.name || 'Unknown Restaurant'}</span>
+                  <span className="font-black text-xl">{restaurants.find(r => r.id === (order.restId || order.rest_id))?.name || 'Restaurant'}</span>
                   <span className="block text-xs font-bold text-neutral-400 mt-1 uppercase tracking-wider">
-                    ID: {order.id.slice(-5)} • {order.orderType === 'prepaid' ? `${t('orders.scheduled')} @ ${order.scheduledTime}` : t('orders.dineIn')}
+                    <span className="text-blue-400">{getOrderNumber(order)}</span> • {order.orderType === 'prepaid' ? `Pre-Order @ ${order.scheduledTime}` : 'Dine-In'}
                   </span>
                 </div>
               </div>
               
-              <OrderTimeline currentStatus={order.status} />
-              
-              {/* Dine-In Verification Button */}
-              {order.status === 'Awaiting Arrival' && order.orderType === 'dine_in' && (
-                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-6 bg-orange-900/20 border border-orange-900/50 p-5 rounded-2xl">
-                  <p className="text-sm font-bold text-orange-400 mb-3">{t('orders.waitingArrival')}</p>
-                  <button 
-                    onClick={() => updateOrderStatus(order.id, 'Pending')} 
-                    className="w-full bg-orange-600 text-white font-black py-4 rounded-xl text-sm flex items-center justify-center gap-2 shadow-[0_0_15px_rgba(234,88,12,0.3)] hover:bg-orange-500 transition-colors"
-                  >
-                    <MapPin size={18}/> {t('orders.imHere')}
-                  </button>
+              {/* Pending Verification - Show the 4-digit code prominently */}
+              {order.status === 'Pending Verification' && (
+                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-6">
+                  <div className="bg-amber-900/20 border border-amber-800/50 rounded-2xl p-6 text-center">
+                    <div className="flex justify-center mb-3">
+                      <div className="w-12 h-12 bg-amber-500/20 rounded-full flex items-center justify-center border border-amber-500/30">
+                        <ShieldCheck size={24} className="text-amber-400" />
+                      </div>
+                    </div>
+                    <p className="text-xs font-bold text-amber-400 uppercase tracking-widest mb-2">Your Verification Code</p>
+                    {order.verificationCode && (
+                      <p className="text-4xl font-black text-amber-300 tracking-[0.4em] font-mono mb-3">{order.verificationCode}</p>
+                    )}
+                    <p className="text-sm text-neutral-400">Show this code to the waiter to confirm your table presence.</p>
+                  </div>
                 </motion.div>
               )}
+
+              {/* Cancelled Order */}
+              {order.status === 'Cancelled' && (
+                <motion.div initial={{ scale: 0.95 }} animate={{ scale: 1 }} className="mb-6">
+                  <div className="bg-red-900/20 border border-red-800/50 rounded-2xl p-5 flex items-center gap-4">
+                    <div className="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center border border-red-500/30 shrink-0">
+                      <XCircle size={20} className="text-red-400" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-red-400">Order Rejected</p>
+                      <p className="text-xs text-neutral-500">This order was not verified by the restaurant staff.</p>
+                    </div>
+                  </div>
+                </motion.div>
+              )}
+
+              <OrderTimeline currentStatus={order.status} />
 
               <div className="bg-black/40 rounded-2xl p-4 mb-4 border border-white/5">
                 <ul className="text-sm font-medium text-neutral-300 space-y-2">
@@ -113,7 +145,14 @@ export default function DinerOrdersPage() {
                 </ul>
               </div>
               
-              <div className="flex justify-between items-center text-sm font-black pt-2">
+              {/* Call Waiter Button for Dine-In */}
+              {order.orderType === 'dine_in' && order.status !== 'Cancelled' && (
+                <button onClick={() => alert('Waiter has been notified and will be at your table shortly!')} className="w-full mb-4 bg-neutral-800/50 hover:bg-neutral-800 text-neutral-300 border border-neutral-700 py-3 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-colors shadow-sm">
+                  <Bell size={16} /> Call Waiter
+                </button>
+              )}
+              
+              <div className="flex justify-between items-center text-sm font-black pt-2 border-t border-neutral-800/50 pt-4">
                 <span className="text-xl">{t('orders.total')}: <span className="text-blue-400">${Number(order.total).toFixed(2)}</span></span>
                 <span className={`px-3 py-1 rounded-lg text-xs ${order.paymentStatus === 'Paid' ? 'bg-emerald-900/20 text-emerald-400' : 'bg-neutral-800 text-neutral-400'}`}>
                   {order.paymentStatus} via {order.paymentMethod}
@@ -127,3 +166,4 @@ export default function DinerOrdersPage() {
     </motion.div>
   );
 }
+

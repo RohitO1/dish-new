@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AnimatePresence } from 'framer-motion';
-import { AppProvider } from './context/AppContext';
+import { AppProvider, useAppContext } from './context/AppContext';
 import Notification from './components/Notification';
 
 // Lazy-load all pages for code-splitting (eliminates the chunk size warning)
@@ -28,11 +28,19 @@ function PageLoader() {
   );
 }
 
+function RootRedirect() {
+  const { user, isInitializing } = useAppContext();
+  if (isInitializing) return <PageLoader />;
+  if (user?.role === 'vendor') return <Navigate to="/vendor" replace />;
+  // For diner or anonymous (null), go to scanner
+  return <Navigate to="/scanner" replace />;
+}
+
 function AnimatedRoutes() {
   return (
     <AnimatePresence mode="wait">
       <Routes>
-        <Route path="/" element={<Navigate to="/auth" replace />} />
+        <Route path="/" element={<RootRedirect />} />
         <Route path="/auth"        element={<AuthPage />} />
         <Route path="/role-select" element={<RoleSelectPage />} />
 

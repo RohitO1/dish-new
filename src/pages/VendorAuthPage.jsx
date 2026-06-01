@@ -17,6 +17,7 @@ export default function VendorAuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resetSent, setResetSent] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
 
   const handleForgotPassword = async () => {
     if (!email) { setError('Enter your email above, then click Forgot Password.'); return; }
@@ -32,10 +33,11 @@ export default function VendorAuthPage() {
   };
 
   const friendlyError = (msg) => {
+    if (!msg) return 'Something went wrong. Please try again.';
     if (msg.includes('already registered')) return 'This email is already registered. Try logging in instead.';
     if (msg.includes('Invalid login credentials')) return 'Email or password is incorrect. Please check and try again.';
     if (msg.includes('weak')) return 'Password must be at least 6 characters long.';
-    return msg || 'Something went wrong. Please try again.';
+    return msg;
   };
 
   const handleRegister = async (e) => {
@@ -43,6 +45,7 @@ export default function VendorAuthPage() {
     if (!displayName.trim()) { setError('Please enter your restaurant / business name.'); return; }
     setLoading(true);
     setError('');
+    setVerificationSent(false);
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -50,10 +53,14 @@ export default function VendorAuthPage() {
         options: { data: { displayName } }
       });
       if (error) throw error;
-      // Supabase context handles setting user session
-      navigate('/vendor-onboard');
+      
+      if (data.user && !data.session) {
+        setVerificationSent(true);
+      } else {
+        navigate('/vendor-onboard');
+      }
     } catch (err) {
-      setError(friendlyError(err.message));
+      setError(friendlyError(err.message || err));
     }
     setLoading(false);
   };
@@ -158,7 +165,16 @@ export default function VendorAuthPage() {
             )}
           </AnimatePresence>
 
-          <motion.button type="submit" disabled={loading}
+          <AnimatePresence>
+            {verificationSent && mode === 'register' && (
+              <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                className="bg-emerald-900/20 border border-emerald-800/50 text-emerald-400 text-sm font-medium p-4 rounded-xl text-center">
+                ✅ Verification email sent! Please check your inbox to confirm your account.
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          <motion.button type="submit" disabled={loading || verificationSent}
             whileHover={{ scale: loading ? 1 : 1.02 }} whileTap={{ scale: loading ? 1 : 0.98 }}
             className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-4 rounded-xl shadow-lg shadow-emerald-900/40 flex items-center justify-center gap-2 disabled:opacity-70 transition-all">
             {loading ? <Loader2 size={20} className="animate-spin" /> : (

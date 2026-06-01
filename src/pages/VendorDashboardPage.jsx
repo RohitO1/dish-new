@@ -72,25 +72,54 @@ export default function VendorDashboardPage() {
     setScanStageLabel('Uploading media...');
     setProgress(5);
     try {
-      const glbUrl = await generateModelFromImage(imageFile, (pct, stage) => {
+      const glbResult = await generateModelFromImage(imageFile, (pct, stage) => {
         setProgress(pct);
         const labels = {
           queued:     'Queued on Tripo servers...',
           uploading:  'Uploading image...',
           running:    'Generating 3D model...',
           texturing:  'Applying photorealistic textures...',
+          downloading:'Downloading model to cloud...',
           success:    '3D AR Model ready!',
         };
         setScanStageLabel(labels[stage] || stage);
         if (pct < 100) setScanState(stage === 'queued' ? 'uploading' 
           : stage === 'running' ? 'processing' 
           : stage === 'texturing' ? 'texturing'
+          : stage === 'downloading' ? 'processing'
           : 'scanning');
       });
+      
+      let finalUrl = glbResult;
+      
+      // If it's an actual File, we need to upload it to our Supabase Storage to get a public URL
+      if (glbResult instanceof File) {
+        setScanState('uploading');
+        setScanStageLabel('Saving model to Supabase Cloud...');
+        finalUrl = await uploadGlbFile(glbResult, true);
+      }
+
       setScanState('complete');
       setProgress(100);
       setScanStageLabel('3D AR Model Generated!');
-      setEditingDish(prev => prev ? { ...prev, modelUrl: glbUrl } : prev);
+      
+      // AI Auto-Fill Advanced Feature Simulation
+      setEditingDish(prev => {
+        if (!prev) return prev;
+        
+        // Only auto-fill if fields are empty
+        const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
+        const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
+        const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed beautifully using Tripo3D API's AI model generator.";
+        
+        return { 
+          ...prev, 
+          modelUrl: finalUrl,
+          description: autoDesc,
+          macros: autoMacros,
+          tags: autoTags
+        };
+      });
     } catch (err) {
       setScanState('idle');
       setProgress(0);
@@ -130,14 +159,17 @@ export default function VendorDashboardPage() {
     setCameraOpen(false);
   };
 
-  const uploadGlbFile = async (file) => {
+  const uploadGlbFile = async (file, hideState = false) => {
     if (!supabase) {
       alert("Supabase is not configured. Please check your .env settings.");
-      return;
+      return null;
     }
-    setScanState('uploading');
-    setScanStageLabel('Uploading .glb model...');
-    setProgress(30);
+    
+    if (!hideState) {
+      setScanState('uploading');
+      setScanStageLabel('Uploading .glb model...');
+      setProgress(30);
+    }
 
     try {
       const filePath = `${activeRestId}/${Date.now()}_${file.name}`;
@@ -151,19 +183,34 @@ export default function VendorDashboardPage() {
         .from('models')
         .getPublicUrl(filePath);
 
-      setEditingDish(prev => prev ? { ...prev, modelUrl: publicUrlData.publicUrl } : prev);
-      setScanState('complete');
-      setScanStageLabel('3D Model Uploaded Successfully!');
-      setProgress(100);
+      if (!hideState) {
+        setEditingDish(prev => prev ? { ...prev, modelUrl: publicUrlData.publicUrl } : prev);
+        setScanState('complete');
+        setScanStageLabel('3D Model Uploaded Successfully!');
+        setProgress(100);
+      }
+      
+      return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Upload failed", error);
-      setScanState('idle');
-      alert("Upload failed. Make sure you created the 'models' bucket in your Supabase Storage.");
+      if (!hideState) {
+        setScanState('idle');
+        alert("Upload failed. Make sure you created the 'models' bucket in your Supabase Storage.");
+      }
+      return null;
     }
   };
 
+  // Helper for sequential order number
+  const getOrderNumber = (order) => {
+    const vendorOrders = orders.filter(o => o.restId === activeRestId || o.rest_id === activeRestId)
+      .sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+    const index = vendorOrders.findIndex(o => o.id === order.id);
+    return index !== -1 ? `Order #${String(index + 1).padStart(3, '0')}` : `#${order.id.slice(-3)}`;
+  };
+
   const restOrders = orders.filter(o => o.restId === activeRestId);
-  const awaitingArrival = restOrders.filter(o => o.status === 'Awaiting Arrival');
+  const pendingVerification = restOrders.filter(o => o.status === 'Pending Verification');
   const pending = restOrders.filter(o => o.status === 'Pending' || o.status === 'Scheduled');
   const prep = restOrders.filter(o => o.status === 'Preparing');
   const ready = restOrders.filter(o => o.status === 'Ready');
@@ -207,9 +254,47 @@ export default function VendorDashboardPage() {
           {vendorTab === 'orders' && (
             <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-x-auto p-6 flex gap-6 items-start">
               
-              {/* Lanes */}
+              {/* Pending Verification Lane (special) */}
+              <div className="w-80 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm flex flex-col max-h-full overflow-hidden">
+                <div className="p-4 bg-amber-50 border-b border-amber-200 font-black flex justify-between items-center">
+                  <span>⏳ Verify Table</span>
+                  <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs">{pendingVerification.length}</span>
+                </div>
+                <div className="p-4 space-y-4 overflow-y-auto bg-amber-50/20 flex-1">
+                  <AnimatePresence>
+                    {pendingVerification.map(o => (
+                      <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm">
+                        <div className="flex justify-between mb-3">
+                          <span className="font-mono font-black text-sm text-neutral-800">{getOrderNumber(o)}</span>
+                          <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">{o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}</span>
+                        </div>
+                        <ul className="text-sm font-bold mb-4 bg-neutral-50 p-3 rounded-lg border border-neutral-100 space-y-1 text-neutral-700">
+                          {o.items.map((item, i) => <li key={i}>1x {item.name}</li>)}
+                        </ul>
+                        {o.verificationCode && (
+                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
+                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Verification Code</p>
+                            <p className="text-3xl font-black text-amber-700 tracking-[0.3em] font-mono">{o.verificationCode}</p>
+                            <p className="text-[10px] text-neutral-500 mt-1">Ask the customer for this code</p>
+                          </div>
+                        )}
+                        {o.contactName && (
+                          <div className="text-xs text-neutral-500 mb-3 bg-neutral-50 p-2 rounded-lg border border-neutral-100">
+                            📞 {o.contactName} • {o.contactPhone}
+                          </div>
+                        )}
+                        <div className="flex gap-2">
+                          <button onClick={() => updateOrderStatus(o.id, 'Pending')} className="flex-1 rounded-lg py-3 text-sm font-black bg-emerald-600 text-white hover:bg-emerald-500 transition-colors shadow-sm">✓ Approve</button>
+                          <button onClick={() => updateOrderStatus(o.id, 'Cancelled')} className="flex-1 rounded-lg py-3 text-sm font-black bg-red-500 text-white hover:bg-red-400 transition-colors shadow-sm">✕ Reject</button>
+                        </div>
+                      </motion.div>
+                    ))}
+                  </AnimatePresence>
+                </div>
+              </div>
+
+              {/* Standard Lanes */}
               {[
-                { title: t('vendor.awaitingArrival'), data: awaitingArrival, color: 'neutral', bg: 'bg-white', headerBg: 'bg-neutral-100', border: 'border-neutral-200', action: 'Pending', actionLabel: 'Force Verify' },
                 { title: t('vendor.cookQueue'), data: pending, color: 'blue', bg: 'bg-white', headerBg: 'bg-blue-50', border: 'border-blue-200', action: 'Preparing', actionLabel: t('vendor.startCooking'), actionColor: 'bg-blue-600 text-white' },
                 { title: t('vendor.preparing'), data: prep, color: 'orange', bg: 'bg-white', headerBg: 'bg-orange-50', border: 'border-orange-200', action: 'Ready', actionLabel: t('vendor.markReady'), actionColor: 'bg-orange-500 text-white' },
                 { title: t('vendor.ready'), data: ready, color: 'emerald', bg: 'bg-white', headerBg: 'bg-emerald-50', border: 'border-emerald-200', action: 'Completed', actionLabel: t('vendor.completeOrder'), actionColor: 'bg-emerald-600 text-white' }
@@ -224,7 +309,7 @@ export default function VendorDashboardPage() {
                       {lane.data.map(o => (
                         <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className={`bg-white border rounded-xl p-4 shadow-sm ${o.orderType === 'prepaid' ? 'border-purple-200 bg-purple-50/10' : 'border-neutral-200'}`}>
                           <div className="flex justify-between mb-3">
-                             <span className="font-mono font-bold text-xs text-neutral-500">ID: {o.id.slice(-5)}</span>
+                             <span className="font-mono font-black text-sm text-neutral-800">{getOrderNumber(o)}</span>
                              {o.orderType === 'prepaid' && <span className="text-[10px] font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">DUE: {o.scheduledTime}</span>}
                           </div>
                           <ul className="text-sm font-bold mb-4 bg-neutral-50 p-3 rounded-lg border border-neutral-100 space-y-1 text-neutral-700">
@@ -233,9 +318,16 @@ export default function VendorDashboardPage() {
                           {lane.title === t('vendor.ready') && o.paymentStatus === 'Unpaid' && (
                              <div className="text-xs mb-3 font-black text-red-500 bg-red-50 p-2 rounded-lg text-center border border-red-100">Collect ${o.total.toFixed(2)} Cash</div>
                           )}
-                          <button onClick={() => updateOrderStatus(o.id, lane.action)} className={`w-full rounded-lg py-3 text-sm font-black transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm ${lane.actionColor || 'bg-neutral-100 text-neutral-800 border border-neutral-200 hover:bg-neutral-200'}`}>
-                            {lane.actionLabel}
-                          </button>
+                          <div className="flex gap-2">
+                            <button onClick={() => updateOrderStatus(o.id, lane.action)} className={`flex-[2] rounded-lg py-3 text-sm font-black transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm ${lane.actionColor || 'bg-neutral-100 text-neutral-800 border border-neutral-200 hover:bg-neutral-200'}`}>
+                              {lane.actionLabel}
+                            </button>
+                            {lane.title === t('vendor.ready') && (
+                              <button onClick={() => alert('Printing Receipt...')} className="flex-1 rounded-lg py-3 flex items-center justify-center bg-neutral-100 text-neutral-600 border border-neutral-200 hover:bg-neutral-200 transition-colors" title="Print Receipt">
+                                <Printer size={18} />
+                              </button>
+                            )}
+                          </div>
                         </motion.div>
                       ))}
                     </AnimatePresence>
@@ -266,7 +358,7 @@ export default function VendorDashboardPage() {
                   {completed.slice(0, 5).map(o => (
                     <div key={o.id} className="flex justify-between items-center py-3 border-b border-neutral-50 last:border-0 text-sm">
                       <span className="text-neutral-500 font-medium bg-neutral-100 px-3 py-1 rounded-lg">{o.timestamp.split('T')[1].slice(0,5)}</span>
-                      <span className="font-mono font-bold text-neutral-400">ID: {o.id.slice(-5)}</span>
+                      <span className="font-mono font-black text-neutral-800">{getOrderNumber(o)}</span>
                       <span className="font-black text-lg text-neutral-800">${o.total.toFixed(2)}</span>
                     </div>
                   ))}

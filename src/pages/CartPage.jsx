@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Banknote, Flame, Droplets, Leaf } from 'lucide-react';
+import { ChevronLeft, ShoppingCart, MapPin, Clock, Smartphone, CreditCard, Banknote, Flame, Droplets, Leaf, Check, User, Phone, Store } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -8,7 +8,7 @@ import BottomNav from '../components/BottomNav';
 
 export default function CartPage() {
   const navigate = useNavigate();
-  const { cart, setCart, placeOrder, activeRestId, restaurants } = useAppContext();
+  const { cart, setCart, placeOrder, activeRestId, restaurants, user, setUser } = useAppContext();
   const { t } = useTranslation();
 
   const currentRestaurant = restaurants.find(r => r.id === activeRestId);
@@ -22,8 +22,10 @@ export default function CartPage() {
 
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
   const total = subtotal * (1 + taxRate);
-  const [step, setStep] = useState('cart'); 
+  
+  const [step, setStep] = useState('cart'); // cart, type, auth, details, pay, success
   const [orderConf, setOrderConf] = useState({ type: 'dine_in', time: '19:30', method: 'UPI' });
+  const [contactDetails, setContactDetails] = useState({ name: '', phone: '' });
   const [tipPct, setTipPct] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
 
@@ -56,10 +58,10 @@ export default function CartPage() {
 
   const executeCheckout = async () => {
     setIsProcessing(true);
-    // Simulate payment processing delay
     await new Promise(r => setTimeout(r, 2000));
 
-    const status = orderConf.type === 'dine_in' ? 'Awaiting Arrival' : 'Scheduled';
+    const code = Math.floor(1000 + Math.random() * 9000).toString(); // 4-digit code
+    const status = orderConf.type === 'dine_in' ? 'Pending Verification' : 'Scheduled';
     const paymentStatus = orderConf.type === 'dine_in' && orderConf.method === 'Cash' ? 'Unpaid' : 'Paid';
     
     const success = await placeOrder({ 
@@ -68,17 +70,97 @@ export default function CartPage() {
       paymentMethod: orderConf.method,
       paymentStatus: paymentStatus,
       status: status,
-      tipAmount: total * tipPct
+      tipAmount: total * tipPct,
+      verificationCode: orderConf.type === 'dine_in' ? code : null,
+      contactName: contactDetails.name,
+      contactPhone: contactDetails.phone
     });
     
     setIsProcessing(false);
-    if (success) navigate('/orders');
+    if (success) {
+      if (orderConf.type === 'prepaid') {
+        setStep('success');
+      } else {
+        navigate('/orders');
+      }
+    }
   };
+
+  const handleNext = async () => {
+    if (step === 'cart') setStep('type');
+    else if (step === 'type') {
+      if (orderConf.type === 'dine_in') {
+        setStep('pay');
+      } else {
+        // Pre-order flow
+        if (!user || user.role !== 'diner') {
+          setStep('auth');
+        } else {
+          setStep('details');
+        }
+      }
+    } else if (step === 'auth') {
+      // Simulate Google Sign-in
+      setIsProcessing(true);
+      await new Promise(r => setTimeout(r, 1500));
+      setUser({ role: 'diner', authProvider: 'google', email: 'user@gmail.com' });
+      setIsProcessing(false);
+      setStep('details');
+    } else if (step === 'details') {
+      if (!contactDetails.name || !contactDetails.phone) {
+        alert("Please fill in your contact details.");
+        return;
+      }
+      setStep('pay');
+    } else if (step === 'pay') {
+      executeCheckout();
+    }
+  };
+
+  const handleBack = () => {
+    if (step === 'cart') navigate('/menu');
+    else if (step === 'type') setStep('cart');
+    else if (step === 'auth') setStep('type');
+    else if (step === 'details') setStep(user?.authProvider === 'google' ? 'type' : 'auth'); // Skip auth on back if logged in
+    else if (step === 'pay') {
+      if (orderConf.type === 'dine_in') setStep('type');
+      else setStep('details');
+    }
+  };
+
+  if (step === 'success') {
+    return (
+      <div className="flex flex-col h-screen bg-neutral-950 text-white pt-20 px-6">
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center text-center space-y-6">
+          <div className="w-24 h-24 bg-emerald-600/20 rounded-full flex items-center justify-center border border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
+             <Check size={48} className="text-emerald-400" />
+          </div>
+          <h2 className="text-3xl font-black">Pre-Order Placed!</h2>
+          <p className="text-neutral-400">Your order has been sent to the vendor successfully.</p>
+          
+          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm mt-4 text-left shadow-2xl">
+            <h3 className="font-bold text-lg text-emerald-400 border-b border-emerald-900/50 pb-3 mb-4 flex items-center gap-2">
+              <Store size={18} /> Vendor Contact Info
+            </h3>
+            <div className="space-y-3">
+              <p className="text-sm flex items-center gap-3"><MapPin size={16} className="text-neutral-500" /> <span className="font-medium text-white">{currentRestaurant?.name}</span></p>
+              <p className="text-sm flex items-center gap-3"><Phone size={16} className="text-neutral-500" /> <span className="font-medium text-white">{currentRestaurant?.phone || '+1 (555) 123-4567'}</span></p>
+              <p className="text-sm flex items-center gap-3"><User size={16} className="text-neutral-500" /> <span className="font-medium text-white">contact@{currentRestaurant?.name.replace(/\s+/g, '').toLowerCase() || 'vendor'}.com</span></p>
+            </div>
+          </div>
+          
+          <button onClick={() => navigate('/orders')} className="mt-8 w-full max-w-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-4 rounded-xl hover:bg-emerald-500 transition-colors shadow-lg">
+            View My Orders →
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-screen bg-neutral-950 text-white pb-24">
       <div className="p-6 border-b border-neutral-900 flex items-center gap-4 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
-        <button onClick={() => step === 'cart' ? navigate('/menu') : setStep(step === 'pay' ? 'type' : 'cart')} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors"><ChevronLeft size={24} /></button>
+        <button onClick={handleBack} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors"><ChevronLeft size={24} /></button>
         <h1 className="text-2xl font-black">{t('cart.checkout')}</h1>
       </div>
 
@@ -140,20 +222,70 @@ export default function CartPage() {
               <div onClick={() => setOrderConf({...orderConf, type: 'dine_in'})} className={`p-6 rounded-3xl border-2 cursor-pointer transition-all ${orderConf.type === 'dine_in' ? 'border-blue-500 bg-blue-900/20 shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'border-neutral-800 bg-neutral-900/50 hover:border-neutral-700'}`}>
                 <div className="flex items-center gap-4 mb-3">
                   <div className={`p-3 rounded-xl ${orderConf.type === 'dine_in' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400'}`}><MapPin size={24} /></div>
-                  <h3 className="font-bold text-lg">{t('cart.dineIn')}</h3>
+                  <div>
+                    <h3 className="font-bold text-lg">Order Now (Dine-In)</h3>
+                    <p className="text-xs text-blue-400 font-bold uppercase tracking-wider mt-1">No Sign-in Required</p>
+                  </div>
                 </div>
-                <p className="text-sm text-neutral-400 leading-relaxed">{t('cart.dineInDesc')}</p>
+                <p className="text-sm text-neutral-400 leading-relaxed">You are at a table in the restaurant. We will generate a verification code for the waiter.</p>
               </div>
 
               <div onClick={() => setOrderConf({...orderConf, type: 'prepaid'})} className={`p-6 rounded-3xl border-2 cursor-pointer transition-all ${orderConf.type === 'prepaid' ? 'border-blue-500 bg-blue-900/20 shadow-[0_0_20px_rgba(37,99,235,0.2)]' : 'border-neutral-800 bg-neutral-900/50 hover:border-neutral-700'}`}>
                 <div className="flex items-center gap-4 mb-3">
                   <div className={`p-3 rounded-xl ${orderConf.type === 'prepaid' ? 'bg-blue-600 text-white' : 'bg-neutral-800 text-neutral-400'}`}><Clock size={24} /></div>
-                  <h3 className="font-bold text-lg">{t('cart.prepaid')}</h3>
+                  <div>
+                    <h3 className="font-bold text-lg">Pre-Order</h3>
+                    <p className="text-xs text-amber-400 font-bold uppercase tracking-wider mt-1">Auth Required</p>
+                  </div>
                 </div>
-                <p className="text-sm text-neutral-400 leading-relaxed">{t('cart.prepaidDesc')}</p>
+                <p className="text-sm text-neutral-400 leading-relaxed">Order ahead of time or for takeout. You will need to sign in with Google to maintain authenticity.</p>
                 {orderConf.type === 'prepaid' && (
                   <motion.input initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} type="time" value={orderConf.time} onChange={e => setOrderConf({...orderConf, time: e.target.value})} className="mt-6 w-full bg-black border border-blue-500/50 rounded-xl p-4 text-white font-bold text-lg focus:outline-none focus:border-blue-500 shadow-inner" />
                 )}
+              </div>
+            </motion.div>
+          )}
+          
+          {step === 'auth' && (
+            <motion.div key="auth" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-6 flex flex-col items-center justify-center py-10">
+              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
+                {/* Simulated Google "G" logo */}
+                <svg className="w-8 h-8" viewBox="0 0 24 24">
+                  <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                  <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                  <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                  <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-black text-center">Sign In Required</h2>
+              <p className="text-neutral-400 text-center text-sm px-4">To prevent fake orders and maintain authenticity, please sign in with Google to complete your Pre-Order.</p>
+              
+              <div className="bg-blue-900/20 border border-blue-900/50 rounded-lg p-3 text-xs text-blue-400 font-medium text-center mx-4">
+                💡 This is a simulation. It will automatically log you in when you tap 'Continue'.
+              </div>
+            </motion.div>
+          )}
+
+          {step === 'details' && (
+            <motion.div key="details" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-6">
+              <h2 className="text-xl font-bold mb-4">Contact Details</h2>
+              <p className="text-sm text-neutral-400 mb-6">The vendor needs this to notify you about your order updates.</p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-wider">Full Name</label>
+                  <div className="relative">
+                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+                    <input type="text" value={contactDetails.name} onChange={e => setContactDetails({...contactDetails, name: e.target.value})} placeholder="e.g. John Doe" className="w-full bg-neutral-900/80 border border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-wider">Phone Number</label>
+                  <div className="relative">
+                    <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+                    <input type="tel" value={contactDetails.phone} onChange={e => setContactDetails({...contactDetails, phone: e.target.value})} placeholder="+1 (555) 000-0000" className="w-full bg-neutral-900/80 border border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
+                  </div>
+                </div>
               </div>
             </motion.div>
           )}
@@ -210,10 +342,16 @@ export default function CartPage() {
       </div>
 
       <div className="fixed bottom-20 w-full p-6 bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-800 rounded-t-[2rem]">
-        {step === 'cart' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setStep('type')} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{t('cart.proceedToCheckout')}</motion.button>}
-        {step === 'type' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={() => setStep('pay')} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{t('cart.continueToPayment')}</motion.button>}
+        {step === 'cart' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{t('cart.proceedToCheckout')}</motion.button>}
+        {step === 'type' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Proceed with Pre-Order'}</motion.button>}
+        {step === 'auth' && (
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext} className="w-full bg-white text-black font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
+            {isProcessing ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 border-neutral-300 border-t-neutral-800 rounded-full" /> Authenticating...</> : 'Continue with Google'}
+          </motion.button>
+        )}
+        {step === 'details' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">Continue to Payment</motion.button>}
         {step === 'pay' && (
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={executeCheckout} 
+          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext} 
             className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2 transition-all">
             {isProcessing ? (
               <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> Processing...</>

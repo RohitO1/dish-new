@@ -11,9 +11,25 @@ export const AppProvider = ({ children }) => {
   const [isInitializing, setIsInitializing] = useState(true);
 
   // Core State
-  const [user, setUser] = useState(null); 
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('3dish_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch {
+      return null;
+    }
+  }); 
   const [activeRestId, setActiveRestId] = useState(null);
   const [activeDishId, setActiveDishId] = useState(null);
+  
+  // Persist user state to localStorage
+  useEffect(() => {
+    if (user) {
+      localStorage.setItem('3dish_user', JSON.stringify(user));
+    } else {
+      localStorage.removeItem('3dish_user');
+    }
+  }, [user]);
   
   // Data State
   const [restaurants, setRestaurants] = useState(INITIAL_RESTAURANTS);
@@ -58,7 +74,7 @@ export const AppProvider = ({ children }) => {
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
-        setUser({ email: u.email, uid: u.id, role: 'vendor' });
+        setUser(prev => ({ ...prev, email: u.email, uid: u.id, role: 'vendor' }));
       }
       setIsInitializing(false);
     });
@@ -67,9 +83,9 @@ export const AppProvider = ({ children }) => {
       const u = session?.user || null;
       setSupabaseUser(u);
       if (u) {
-        setUser({ email: u.email, uid: u.id, role: 'vendor' });
+        setUser(prev => ({ ...prev, email: u.email, uid: u.id, role: 'vendor' }));
       } else {
-        setUser(null);
+        setUser(prev => (prev?.role === 'vendor' ? null : prev)); // Only clear user if they were a vendor
       }
     });
 
@@ -121,6 +137,16 @@ export const AppProvider = ({ children }) => {
       supabase.removeChannel(restSub);
     };
   }, [supabaseUser]);
+
+  // Audio Notification for Vendors
+  const [prevOrdersCount, setPrevOrdersCount] = useState(0);
+  useEffect(() => {
+    if (orders.length > prevOrdersCount && prevOrdersCount > 0 && user?.role === 'vendor') {
+      const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+      audio.play().catch(e => console.log("Audio play blocked by browser:", e));
+    }
+    setPrevOrdersCount(orders.length);
+  }, [orders.length, user, prevOrdersCount]);
 
   const showNotification = (msg) => {
     setNotification(msg);

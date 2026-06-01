@@ -119,9 +119,11 @@ export default function MenuPage() {
                     <span className="text-[9px] font-black text-orange-400">{dish.macros.calories}</span>
                   </div>
                 )}
-                <div className="absolute bottom-1 right-1 bg-black/60 backdrop-blur-sm px-1.5 py-0.5 rounded-lg text-[9px] font-bold text-blue-400 flex items-center gap-0.5 z-10">
-                  <Box size={9}/> {t('menu.ar')}
-                </div>
+                {dish.modelUrl && (
+                  <div className="absolute bottom-1 right-1 bg-blue-600/90 backdrop-blur-sm px-1.5 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-0.5 z-10 shadow-[0_0_10px_rgba(37,99,235,0.6)] border border-white/20">
+                    <Box size={10}/> 3D AR
+                  </div>
+                )}
               </div>
 
               {/* Info */}

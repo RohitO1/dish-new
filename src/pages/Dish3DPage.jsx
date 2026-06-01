@@ -73,10 +73,15 @@ export default function Dish3DPage() {
             ar
             ar-modes="webxr scene-viewer quick-look"
             auto-rotate
+            auto-rotate-delay="0"
+            rotation-per-second="30deg"
             camera-controls
+            camera-orbit="0deg 75deg 105%"
             shadow-intensity="2"
+            shadow-softness="1"
             environment-image="neutral"
-            exposure="1.2"
+            exposure="1.3"
+            interaction-prompt="none"
             style="width: 100%; height: 100%; --poster-color: transparent;"
           >
             <button slot="ar-button" style="
