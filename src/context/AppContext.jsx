@@ -244,9 +244,7 @@ export const AppProvider = ({ children }) => {
     const newRest = {
       vendor_id: supabaseUser.id,
       name: restData.name,
-      cover: restData.cover,
-      tax_rate: restData.taxRate,
-      accept_cash: restData.acceptCash
+      cover: restData.cover
     };
 
     try {
@@ -282,7 +280,11 @@ export const AppProvider = ({ children }) => {
   const addDish = async (dishData) => {
     if (!supabaseUser) return null;
     try {
-      const { data, error } = await supabase.from('dishes').insert([dishData]).select();
+      // Map frontend camelCase to Supabase snake_case
+      const { restId, ...restOfDish } = dishData;
+      const formattedDish = { ...restOfDish, rest_id: restId };
+      
+      const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
       return data[0].id;
     } catch (error) {

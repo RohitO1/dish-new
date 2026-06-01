@@ -35,6 +35,7 @@ export default function VendorDashboardPage() {
   const dishCameraRef  = React.useRef(null);
   const [cameraOpen, setCameraOpen]     = React.useState(false);
   const [cameraStream, setCameraStream] = React.useState(null);
+  const [isCameraStarting, setIsCameraStarting] = React.useState(false);
 
   // Multi-table QR
   const [tableCount, setTableCount] = React.useState(1);
@@ -129,6 +130,7 @@ export default function VendorDashboardPage() {
   }, []);
 
   const openDishCamera = async () => {
+    setIsCameraStarting(true);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
       setCameraStream(stream);
@@ -138,6 +140,8 @@ export default function VendorDashboardPage() {
       }, 100);
     } catch (err) {
       fileInputRef.current?.click();
+    } finally {
+      setIsCameraStarting(false);
     }
   };
 
@@ -493,8 +497,8 @@ export default function VendorDashboardPage() {
                       <button type="button" onClick={() => glbInputRef.current?.click()} className="text-xs bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-emerald-200 transition-colors">
                         <Upload size={14} /> Upload .glb
                       </button>
-                      <button type="button" onClick={openDishCamera} className="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-purple-200 transition-colors">
-                        <Camera size={14} /> Scan Dish
+                      <button type="button" onClick={openDishCamera} disabled={isCameraStarting} className="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-purple-200 transition-colors disabled:opacity-50">
+                        {isCameraStarting ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {isCameraStarting ? 'Opening...' : 'Scan Dish'}
                       </button>
                       <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-blue-200 transition-colors">
                         <Upload size={14} /> Upload Media
@@ -502,6 +506,14 @@ export default function VendorDashboardPage() {
                     </div>
                   </label>
                   <input type="url" value={editingDish.modelUrl} onChange={e => setEditingDish({...editingDish, modelUrl: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500" placeholder="https://..." />
+                  
+                  {editingDish.modelUrl && (
+                    <div className="mt-4 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 h-64 relative shadow-inner">
+                      <model-viewer src={editingDish.modelUrl} auto-rotate camera-controls shadow-intensity="1" style={{width: '100%', height: '100%', backgroundColor: 'transparent'}}></model-viewer>
+                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-neutral-800 text-[10px] px-3 py-1 rounded-full font-black shadow-sm uppercase tracking-wider">3D Preview</div>
+                    </div>
+                  )}
+
                   {scanState === 'idle' && !editingDish.modelUrl && (
                     <p className="text-xs text-neutral-500 mt-2"><Sparkles className="inline text-amber-500 mr-1" size={12}/>Use our AI Photogrammetry tool to generate a 3D model from your camera instantly.</p>
                   )}
