@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
 import BottomNav from '../components/BottomNav';
+import { supabase } from '../services/supabase';
 
 export default function CartPage() {
   const navigate = useNavigate();
@@ -23,11 +24,28 @@ export default function CartPage() {
   const subtotal = cart.reduce((sum, item) => sum + Number(item.price), 0);
   const total = subtotal * (1 + taxRate);
   
-  const [step, setStep] = useState('cart'); // cart, type, auth, details, pay, success
-  const [orderConf, setOrderConf] = useState({ type: 'dine_in', time: '19:30', method: 'UPI' });
+  const [step, setStep] = useState(() => sessionStorage.getItem('cart_step') || 'cart');
+  const [orderConf, setOrderConf] = useState(() => {
+    try { return JSON.parse(sessionStorage.getItem('cart_orderConf')) || { type: 'dine_in', time: '19:30', method: 'UPI' }; }
+    catch { return { type: 'dine_in', time: '19:30', method: 'UPI' }; }
+  });
   const [contactDetails, setContactDetails] = useState({ name: '', phone: '' });
   const [tipPct, setTipPct] = useState(0);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+
+  // After returning from Google OAuth redirect, auto-advance past the auth step
+  useEffect(() => {
+    const checkSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session && step === 'auth') {
+        sessionStorage.removeItem('cart_step');
+        sessionStorage.removeItem('cart_orderConf');
+        setStep('details');
+      }
+    };
+    checkSession();
+  }, []);
 
   const totalMacros = cart.reduce((acc, item) => {
     if (item.macros) {
@@ -92,23 +110,19 @@ export default function CartPage() {
       if (orderConf.type === 'dine_in') {
         setStep('pay');
       } else {
-        // Pre-order flow
-        if (!user || user.role !== 'diner') {
-          setStep('auth');
+        // Pre-order: check for existing Supabase session first
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          setStep('details'); // already signed in, skip auth
         } else {
-          setStep('details');
+          setStep('auth');
         }
       }
     } else if (step === 'auth') {
-      // Simulate Google Sign-in
-      setIsProcessing(true);
-      await new Promise(r => setTimeout(r, 1500));
-      setUser({ role: 'diner', authProvider: 'google', email: 'user@gmail.com' });
-      setIsProcessing(false);
-      setStep('details');
+      // This step is handled by its own Google button — do nothing here
     } else if (step === 'details') {
       if (!contactDetails.name || !contactDetails.phone) {
-        alert("Please fill in your contact details.");
+        alert('Please fill in your contact details.');
         return;
       }
       setStep('pay');
@@ -121,7 +135,7 @@ export default function CartPage() {
     if (step === 'cart') navigate('/menu');
     else if (step === 'type') setStep('cart');
     else if (step === 'auth') setStep('type');
-    else if (step === 'details') setStep(user?.authProvider === 'google' ? 'type' : 'auth'); // Skip auth on back if logged in
+    else if (step === 'details') setStep('type'); // always back to type, skipping auth
     else if (step === 'pay') {
       if (orderConf.type === 'dine_in') setStep('type');
       else setStep('details');
@@ -248,9 +262,8 @@ export default function CartPage() {
           
           {step === 'auth' && (
             <motion.div key="auth" initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} exit={{ x: -20, opacity: 0 }} className="space-y-6 flex flex-col items-center justify-center py-10">
-              <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center mb-2">
-                {/* Simulated Google "G" logo */}
-                <svg className="w-8 h-8" viewBox="0 0 24 24">
+              <div className="w-20 h-20 bg-white rounded-3xl flex items-center justify-center mb-2 shadow-2xl">
+                <svg className="w-10 h-10" viewBox="0 0 24 24">
                   <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                   <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
                   <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
@@ -258,10 +271,39 @@ export default function CartPage() {
                 </svg>
               </div>
               <h2 className="text-2xl font-black text-center">Sign In Required</h2>
-              <p className="text-neutral-400 text-center text-sm px-4">To prevent fake orders and maintain authenticity, please sign in with Google to complete your Pre-Order.</p>
+              <p className="text-neutral-400 text-center text-sm px-4 leading-relaxed">To prevent fake pre-orders and ensure authenticity, please sign in with Google.</p>
               
-              <div className="bg-blue-900/20 border border-blue-900/50 rounded-lg p-3 text-xs text-blue-400 font-medium text-center mx-4">
-                💡 This is a simulation. It will automatically log you in when you tap 'Continue'.
+              <div className="w-full bg-neutral-900/50 border border-neutral-800 rounded-3xl p-6 space-y-4">
+                <motion.button
+                  disabled={googleLoading}
+                  onClick={async () => {
+                    setGoogleLoading(true);
+                    // Persist cart state before redirect so it survives the OAuth round-trip
+                    sessionStorage.setItem('cart_step', 'details');
+                    sessionStorage.setItem('cart_orderConf', JSON.stringify(orderConf));
+                    const { error } = await supabase.auth.signInWithOAuth({
+                      provider: 'google',
+                      options: { redirectTo: window.location.origin + '/cart' }
+                    });
+                    if (error) { alert(error.message); setGoogleLoading(false); }
+                  }}
+                  whileHover={{ scale: googleLoading ? 1 : 1.02 }} whileTap={{ scale: googleLoading ? 1 : 0.98 }}
+                  className="w-full bg-white text-black font-black py-4 rounded-xl shadow-lg flex items-center justify-center gap-3 disabled:opacity-60 transition-all">
+                  {googleLoading ? (
+                    <div className="w-5 h-5 border-2 border-neutral-400 border-t-neutral-800 rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <svg className="w-5 h-5" viewBox="0 0 24 24">
+                        <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                        <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                        <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                        <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+                      </svg>
+                      Continue with Google
+                    </>
+                  )}
+                </motion.button>
+                <p className="text-center text-xs text-neutral-600">You will be redirected to Google and brought back here automatically.</p>
               </div>
             </motion.div>
           )}
@@ -343,12 +385,8 @@ export default function CartPage() {
 
       <div className="fixed bottom-20 w-full p-6 bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-800 rounded-t-[2rem]">
         {step === 'cart' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{t('cart.proceedToCheckout')}</motion.button>}
-        {step === 'type' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Proceed with Pre-Order'}</motion.button>}
-        {step === 'auth' && (
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext} className="w-full bg-white text-black font-black py-4 rounded-2xl shadow-lg flex justify-center items-center gap-2">
-            {isProcessing ? <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 border-neutral-300 border-t-neutral-800 rounded-full" /> Authenticating...</> : 'Continue with Google'}
-          </motion.button>
-        )}
+        {step === 'type' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{ orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Proceed with Pre-Order'}</motion.button>}
+        {/* auth step: no bottom button — the Google button lives inside the scroll area */}
         {step === 'details' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">Continue to Payment</motion.button>}
         {step === 'pay' && (
           <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext} 
