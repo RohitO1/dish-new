@@ -280,16 +280,15 @@ export const AppProvider = ({ children }) => {
   const addDish = async (dishData) => {
     if (!supabaseUser) return null;
     try {
-      // Map frontend camelCase to Supabase snake_case
-      const { restId, ...restOfDish } = dishData;
-      const formattedDish = { ...restOfDish, rest_id: restId };
+      // Send both camelCase and snake_case to be safe
+      const formattedDish = { ...dishData, rest_id: dishData.restId };
       
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
       return data[0].id;
     } catch (error) {
-      console.error(error);
-      showNotification('Failed to save dish.');
+      console.error('Save dish error:', error);
+      showNotification(`Failed to save dish: ${error.message || error.details || 'Unknown error'}`);
       return null;
     }
   };
