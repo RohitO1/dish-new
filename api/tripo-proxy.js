@@ -38,8 +38,8 @@ export default async function handler(req) {
       method: req.method,
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
-        // Only pass Content-Type for JSON requests (not form-data, that has its own boundary)
-        ...(isFormData ? {} : { 'Content-Type': 'application/json' }),
+        // Preserve the original Content-Type boundary for form data
+        ...(isFormData ? { 'Content-Type': req.headers.get('content-type') } : { 'Content-Type': 'application/json' }),
       },
       body: req.method === 'POST' ? req.body : undefined,
       duplex: 'half',
