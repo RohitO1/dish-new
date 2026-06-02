@@ -34,29 +34,32 @@ export default async function handler(req) {
   try {
     const isFormData = req.headers.get('content-type')?.includes('multipart');
 
-    let fetchBody = req.method === 'POST' ? req.body : undefined;
-    let fetchHeaders = new Headers();
+    // Buffer the ENTIRE request body into an ArrayBuffer
+    // This is safe because extracted image frames are < 500KB.
+    // Doing this guarantees we pass EXACTLY the same boundary bytes the browser created,
+    // and prevents Vercel Edge from using Transfer-Encoding: chunked (which Tripo3D rejects).
+    const reqBuffer = req.method === 'POST' ? await req.arrayBuffer() : undefined;
 
-    if (isFormData && req.method === 'POST') {
-      // Natively parse and reconstruct the form data. 
-      // Fetch will automatically generate the correct Content-Type with a valid boundary.
-      fetchBody = await req.formData();
-      fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
-    } else {
-      // Normal JSON / other requests proxy
-      for (const [key, value] of req.headers.entries()) {
-        if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
-          fetchHeaders.set(key, value);
-        }
+    let fetchHeaders = new Headers();
+    for (const [key, value] of req.headers.entries()) {
+      // Drop headers that should not be forwarded
+      if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
+        fetchHeaders.set(key, value);
       }
-      fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
+    }
+    
+    // Add API Key
+    fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
+    
+    // Explicitly set Content-Length to force a non-chunked, fixed-length payload
+    if (reqBuffer) {
+      fetchHeaders.set('Content-Length', reqBuffer.byteLength.toString());
     }
 
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
       headers: fetchHeaders,
-      body: fetchBody,
-      duplex: fetchBody && !(fetchBody instanceof FormData) ? 'half' : undefined,
+      body: reqBuffer, // Forward raw bytes
     });
 
     const data = await upstreamRes.arrayBuffer();
