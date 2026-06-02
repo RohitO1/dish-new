@@ -31,11 +31,11 @@ export const AppProvider = ({ children }) => {
     }
   }, [user]);
   
-  // Data State
-  const [restaurants, setRestaurants] = useState(INITIAL_RESTAURANTS);
+  // Data State — start empty when Supabase is connected (real data loaded via fetch)
+  const [restaurants, setRestaurants] = useState(supabase ? [] : INITIAL_RESTAURANTS);
   const [cart, setCart] = useState([]);
   const [orders, setOrders] = useState([]); 
-  const [dishes, setDishes] = useState(INITIAL_DISHES); 
+  const [dishes, setDishes] = useState(supabase ? [] : INITIAL_DISHES); 
   const [notification, setNotification] = useState(null);
   const [vendorTab, setVendorTab] = useState('orders');
   const [favorites, setFavorites] = useState(() => {
@@ -117,7 +117,10 @@ export const AppProvider = ({ children }) => {
     
     const fetchOrders = async () => {
       const { data } = await supabase.from('orders').select('*').order('timestamp', { ascending: false });
-      if (data) setOrders(data);
+      if (data) {
+        const mappedOrders = data.map(o => ({ ...o, restId: o.rest_id || o.restId }));
+        setOrders(mappedOrders);
+      }
     };
     
     const fetchDishes = async () => {
@@ -164,6 +167,16 @@ export const AppProvider = ({ children }) => {
       supabase.removeChannel(restSub);
     };
   }, [supabaseUser]);
+
+  // Auto-set activeRestId for logged-in vendor on mount or when restaurants list updates
+  useEffect(() => {
+    if (supabaseUser && restaurants.length > 0 && !activeRestId) {
+      const myRest = restaurants.find(r => r.vendorId === supabaseUser.id || r.vendor_id === supabaseUser.id);
+      if (myRest) {
+        setActiveRestId(myRest.id);
+      }
+    }
+  }, [restaurants, supabaseUser, activeRestId]);
 
   // Audio Notification for Vendors
   const [prevOrdersCount, setPrevOrdersCount] = useState(0);
@@ -228,13 +241,11 @@ export const AppProvider = ({ children }) => {
 
     const newOrder = {
       user_id: user?.uid || user?.phone || 'anonymous',
-      rest_id: activeRestId,  // Supabase column (snake_case)
-      restId: activeRestId,   // local filtering (camelCase)
+      rest_id: activeRestId,
       items: cart,
       total: cart.reduce((sum, item) => sum + Number(item.price), 0) * (1 + taxRate),
       status: 'Pending',
       timestamp: new Date().toISOString(),
-      ...orderData
     };
 
     try {
@@ -274,40 +285,57 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateRestaurant = async (restId, updateData) => {
-    if (!supabaseUser) return;
+    if (!supabaseUser) {
+      showNotification('You must be logged in to update settings.');
+      return;
+    }
+    if (!restId) {
+      showNotification('No restaurant selected. Please complete onboarding first.');
+      return;
+    }
     try {
+      const updatePayload = {};
+      if (updateData.name !== undefined) updatePayload.name = updateData.name;
+      if (updateData.cover !== undefined) updatePayload.cover = updateData.cover;
+      if (updateData.taxRate !== undefined) updatePayload.tax_rate = updateData.taxRate;
+      if (updateData.acceptCash !== undefined) updatePayload.accept_cash = updateData.acceptCash;
+
       const { error } = await supabase.from('restaurants')
-        .update({
-          name: updateData.name,
-          cover: updateData.cover,
-          tax_rate: updateData.taxRate,
-          accept_cash: updateData.acceptCash
-        })
+        .update(updatePayload)
         .eq('id', restId);
       if (error) throw error;
       showNotification('Settings updated successfully!');
     } catch (error) {
-      console.error(error);
-      showNotification('Failed to update settings.');
+      console.error('Update restaurant error:', error);
+      showNotification(`Failed to update settings: ${error.message}`);
     }
   };
 
   const addDish = async (dishData) => {
-    if (!supabaseUser) return null;
+    if (!supabaseUser) {
+      showNotification('You must be logged in to add a dish.');
+      return null;
+    }
+    if (!dishData.restId) {
+      showNotification('No restaurant selected. Please complete onboarding first.');
+      return null;
+    }
     try {
-      // Strictly map only snake_case properties for insertion
+      // Strictly map only snake_case properties that exist in the DB
       const formattedDish = { 
         name: dishData.name,
-        price: dishData.price,
-        description: dishData.description,
-        model_url: dishData.modelUrl,
-        macros: dishData.macros,
-        tags: dishData.tags,
+        price: parseFloat(dishData.price) || 0,
+        description: dishData.description || '',
+        model_url: dishData.modelUrl || '',
+        macros: dishData.macros || {},
+        tags: dishData.tags || [],
         rest_id: dishData.restId
       };
       
+      console.log('Inserting dish:', formattedDish);
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
+      showNotification('Dish saved successfully!');
       return data[0].id;
     } catch (error) {
       console.error('Save dish error:', error);
@@ -317,24 +345,32 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateDish = async (dishId, updates) => {
-    if (!supabaseUser) return;
+    if (!supabaseUser) {
+      showNotification('You must be logged in to update a dish.');
+      return;
+    }
     try {
-      const formattedUpdates = { ...updates };
-      if (formattedUpdates.modelUrl !== undefined) {
-        formattedUpdates.model_url = formattedUpdates.modelUrl;
-        delete formattedUpdates.modelUrl;
-      }
-      if (formattedUpdates.restId !== undefined) {
-        formattedUpdates.rest_id = formattedUpdates.restId;
-        delete formattedUpdates.restId;
-      }
+      // Only send columns that actually exist in the DB schema
+      const dbUpdate = {};
+      if (updates.name !== undefined) dbUpdate.name = updates.name;
+      if (updates.price !== undefined) dbUpdate.price = parseFloat(updates.price) || 0;
+      if (updates.description !== undefined) dbUpdate.description = updates.description;
+      if (updates.modelUrl !== undefined) dbUpdate.model_url = updates.modelUrl;
+      if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
+      if (updates.macros !== undefined) dbUpdate.macros = updates.macros;
+      if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
+      if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;
+      if (updates.ingredients !== undefined) dbUpdate.ingredients = updates.ingredients;
+      if (updates.restId !== undefined) dbUpdate.rest_id = updates.restId;
+      if (updates.rest_id !== undefined) dbUpdate.rest_id = updates.rest_id;
 
-      const { error } = await supabase.from('dishes').update(formattedUpdates).eq('id', dishId);
+      console.log('Updating dish:', dishId, dbUpdate);
+      const { error } = await supabase.from('dishes').update(dbUpdate).eq('id', dishId);
       if (error) throw error;
       showNotification('Dish updated successfully.');
     } catch (error) {
-      console.error(error);
-      showNotification('Failed to update dish.');
+      console.error('Update dish error:', error);
+      showNotification(`Failed to update dish: ${error.message}`);
     }
   };
 

@@ -1,17 +1,38 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ListOrdered, TrendingUp, Utensils, QrCode as QrIcon, Box, Edit2, Plus, X, Camera, Upload, Sparkles, Loader2, CheckCircle2, Printer, AlertTriangle, LogOut, Store, Settings, Users, Save, Trash2 } from 'lucide-react';
+import { LayoutDashboard, ListOrdered, TrendingUp, Utensils, QrCode as QrIcon, Box, Edit2, Plus, X, Camera, Upload, Sparkles, Loader2, CheckCircle2, Printer, AlertTriangle, LogOut, Store, Settings, Users, Save, Trash2, XCircle, RefreshCw, Video, Film } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
-import { generateModelFromImage } from '../services/tripo';
+import { generateModelFromImage, generateModelFromVideo } from '../services/tripo';
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
-  const { orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus, dishes, restaurants, addDish, updateDish, user, setUser, updateRestaurant } = useAppContext();
+  const { orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus, dishes, restaurants, addDish, updateDish, user, setUser, updateRestaurant, supabaseUser, setActiveRestId, isInitializing } = useAppContext();
   const { t } = useTranslation();
+
+  // Auth and Onboarding Guards
+  React.useEffect(() => {
+    if (isInitializing) return; // Wait for auth state to load
+    
+    if (!supabaseUser) {
+      navigate('/vendor-auth', { replace: true });
+      return;
+    }
+
+    const myRest = restaurants.find(r => r.vendor_id === supabaseUser.id || r.vendorId === supabaseUser.id);
+    if (!myRest && restaurants.length === 0) {
+      // Wait for restaurants to load from DB before redirecting
+      return;
+    }
+    if (!myRest) {
+      navigate('/vendor-onboard', { replace: true });
+    } else if (!activeRestId) {
+      setActiveRestId(myRest.id);
+    }
+  }, [supabaseUser, restaurants, activeRestId, navigate, setActiveRestId]);
 
   const handleLogout = async () => {
     try {
@@ -32,6 +53,7 @@ export default function VendorDashboardPage() {
   const [progress, setProgress]             = React.useState(0);
   const fileInputRef   = React.useRef(null);
   const glbInputRef    = React.useRef(null);
+  const videoInputRef  = React.useRef(null);
   const dishCameraRef  = React.useRef(null);
   const [cameraOpen, setCameraOpen]     = React.useState(false);
   const [cameraStream, setCameraStream] = React.useState(null);
@@ -67,74 +89,95 @@ export default function VendorDashboardPage() {
   // Allergens state (part of editingDish)
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy'];
 
-  // Real Tripo3D processing (with demo fallback when no API key)
+  // Stage labels shared between image and video pipelines
+  const STAGE_LABELS = {
+    extracting: 'Extracting keyframes from video...',
+    queued:     'Queued on Tripo servers...',
+    uploading:  'Uploading frames to AI...',
+    running:    'Generating 3D model...',
+    texturing:  'Applying photorealistic textures...',
+    downloading:'Downloading model to cloud...',
+    success:    '3D AR Model ready!',
+  };
+
+  // Shared handler that finalizes a GLB result from any pipeline
+  const finalizeGlbResult = React.useCallback(async (glbResult) => {
+    let finalUrl = glbResult;
+
+    // If it's an actual File, upload to Supabase Storage for a public URL
+    if (glbResult instanceof File) {
+      setScanState('uploading');
+      setScanStageLabel('Saving model to Supabase Cloud...');
+      finalUrl = await uploadGlbFile(glbResult, true);
+    }
+
+    setScanState('complete');
+    setProgress(100);
+    setScanStageLabel('3D AR Model Generated!');
+
+    // AI Auto-Fill if fields are still empty
+    setEditingDish(prev => {
+      if (!prev) return prev;
+      const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
+      const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
+      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed beautifully using Tripo3D API's AI model generator.";
+      return { ...prev, modelUrl: finalUrl, description: autoDesc, macros: autoMacros, tags: autoTags };
+    });
+  }, []);
+
+  // Single-image pipeline (Scan Dish / camera capture)
   const startAiProcessing = React.useCallback(async (imageFile = null) => {
     setScanState('uploading');
-    setScanStageLabel('Uploading media...');
+    setScanStageLabel('Uploading image...');
     setProgress(5);
     try {
       const glbResult = await generateModelFromImage(imageFile, (pct, stage) => {
         setProgress(pct);
-        const labels = {
-          queued:     'Queued on Tripo servers...',
-          uploading:  'Uploading image...',
-          running:    'Generating 3D model...',
-          texturing:  'Applying photorealistic textures...',
-          downloading:'Downloading model to cloud...',
-          success:    '3D AR Model ready!',
-        };
-        setScanStageLabel(labels[stage] || stage);
-        if (pct < 100) setScanState(stage === 'queued' ? 'uploading' 
-          : stage === 'running' ? 'processing' 
+        setScanStageLabel(STAGE_LABELS[stage] || stage);
+        if (pct < 100) setScanState(stage === 'queued' ? 'uploading'
+          : stage === 'running' ? 'processing'
           : stage === 'texturing' ? 'texturing'
           : stage === 'downloading' ? 'processing'
           : 'scanning');
       });
-      
-      let finalUrl = glbResult;
-      
-      // If it's an actual File, we need to upload it to our Supabase Storage to get a public URL
-      if (glbResult instanceof File) {
-        setScanState('uploading');
-        setScanStageLabel('Saving model to Supabase Cloud...');
-        finalUrl = await uploadGlbFile(glbResult, true);
-      }
-
-      setScanState('complete');
-      setProgress(100);
-      setScanStageLabel('3D AR Model Generated!');
-      
-      // AI Auto-Fill Advanced Feature Simulation
-      setEditingDish(prev => {
-        if (!prev) return prev;
-        
-        // Only auto-fill if fields are empty
-        const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
-        const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
-        const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed beautifully using Tripo3D API's AI model generator.";
-        
-        return { 
-          ...prev, 
-          modelUrl: finalUrl,
-          description: autoDesc,
-          macros: autoMacros,
-          tags: autoTags
-        };
-      });
+      await finalizeGlbResult(glbResult);
     } catch (err) {
-      setScanState('idle');
+      const msg = err?.message || 'Unknown error';
+      console.error('[AI 3D Image] Error:', err);
+      setScanState('error');
       setProgress(0);
-      setScanStageLabel('');
-      console.error('[AI 3D]', err);
-      // Show a helpful error message
-      const errMsg = err?.message || '';
-      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('CORS')) {
-        alert('3D generation failed: Network/CORS error. The Tripo API cannot be called directly from the browser. Please set up a Vercel proxy function (see console for details).');
-      } else {
-        alert(`3D generation failed: ${errMsg || 'Unknown error. Check browser console.'}`);
-      }
+      setScanStageLabel(msg);
     }
-  }, []);
+  }, [finalizeGlbResult]);
+
+  // Video pipeline — the primary flow
+  const startVideoProcessing = React.useCallback(async (videoFile) => {
+    setScanState('scanning');
+    setScanStageLabel('Extracting keyframes from video...');
+    setProgress(2);
+    try {
+      const glbResult = await generateModelFromVideo(videoFile, (pct, stage) => {
+        setProgress(pct);
+        setScanStageLabel(STAGE_LABELS[stage] || stage);
+        if (pct < 100) setScanState(
+          stage === 'extracting' ? 'scanning'
+          : stage === 'queued' ? 'uploading'
+          : stage === 'uploading' ? 'uploading'
+          : stage === 'running' ? 'processing'
+          : stage === 'texturing' ? 'texturing'
+          : stage === 'downloading' ? 'processing'
+          : 'scanning'
+        );
+      });
+      await finalizeGlbResult(glbResult);
+    } catch (err) {
+      const msg = err?.message || 'Unknown error';
+      console.error('[AI 3D Video] Error:', err);
+      setScanState('error');
+      setProgress(0);
+      setScanStageLabel(msg);
+    }
+  }, [finalizeGlbResult]);
 
   const openDishCamera = async () => {
     setIsCameraStarting(true);
@@ -437,26 +480,42 @@ export default function VendorDashboardPage() {
               )}
 
               {scanState !== 'idle' && (
-                <div className="bg-neutral-900 rounded-3xl p-8 mb-8 text-white relative overflow-hidden shadow-2xl">
-                  {scanState !== 'complete' && <div className="absolute inset-0 bg-blue-600/20 animate-pulse" />}
+                <div className={`rounded-3xl p-8 mb-8 text-white relative overflow-hidden shadow-2xl ${scanState === 'error' ? 'bg-red-900' : 'bg-neutral-900'}`}>
+                  {scanState !== 'complete' && scanState !== 'error' && <div className="absolute inset-0 bg-blue-600/20 animate-pulse" />}
+                  {scanState === 'error' && <div className="absolute inset-0 bg-red-800/30" />}
                   <div className="relative z-10 flex flex-col items-center justify-center py-6 text-center">
                     {scanState === 'uploading'  && <Upload  className="mb-4 text-blue-400 animate-bounce" size={40} />}
                     {scanState === 'scanning'   && <Camera  className="mb-4 text-purple-400" size={40} />}
                     {scanState === 'processing' && <Loader2 className="mb-4 text-emerald-400 animate-spin" size={40} />}
                     {scanState === 'texturing'  && <Sparkles className="mb-4 text-amber-400" size={40} />}
                     {scanState === 'complete'   && <CheckCircle2 className="mb-4 text-emerald-500" size={48} />}
-                    <h3 className={`text-xl font-black ${scanState === 'complete' ? 'text-emerald-400' : 'text-white'}`}>
-                      {scanStageLabel || 'Processing...'}
+                    {scanState === 'error'      && <XCircle className="mb-4 text-red-400" size={48} />}
+                    <h3 className={`text-xl font-black ${
+                      scanState === 'complete' ? 'text-emerald-400' 
+                      : scanState === 'error' ? 'text-red-300'
+                      : 'text-white'
+                    }`}>
+                      {scanState === 'error' ? '3D Generation Failed' : (scanStageLabel || 'Processing...')}
                     </h3>
+                    {scanState === 'error' && (
+                      <>
+                        <p className="text-red-300/80 text-xs mt-2 max-w-xs px-2 break-words">{scanStageLabel}</p>
+                        <button type="button"
+                          onClick={() => { setScanState('idle'); setProgress(0); setScanStageLabel(''); }}
+                          className="mt-5 flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-5 py-2.5 rounded-full transition-all">
+                          <RefreshCw size={15} /> Try Again
+                        </button>
+                      </>
+                    )}
                     {scanState === 'complete' && <p className="text-neutral-400 text-sm mt-1">Model attached — fill in details and publish.</p>}
-                    {scanState !== 'complete' && (
+                    {scanState !== 'complete' && scanState !== 'error' && (
                       <div className="w-full max-w-md bg-neutral-800 rounded-full h-2 mt-6 overflow-hidden">
                         <motion.div initial={{ width: 0 }} animate={{ width: `${progress}%` }}
                           transition={{ duration: 0.4 }}
                           className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-emerald-500" />
                       </div>
                     )}
-                    {scanState !== 'complete' && (
+                    {scanState !== 'complete' && scanState !== 'error' && (
                       <p className="text-neutral-500 text-xs mt-3">{Math.round(progress)}% complete</p>
                     )}
                   </div>
@@ -491,38 +550,70 @@ export default function VendorDashboardPage() {
                   <textarea required value={editingDish.description} onChange={e => setEditingDish({...editingDish, description: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500 h-24"></textarea>
                 </div>
 
+                {/* ── Video Upload → 3D Model Section ── */}
                 <div>
-                  <label className="block text-sm font-bold text-neutral-700 mb-2 flex justify-between items-end">
-                    <span>3D Model URL (.glb)</span>
+                  <label className="block text-sm font-bold text-neutral-700 mb-3 flex justify-between items-end">
+                    <span className="flex items-center gap-2"><Film size={16} className="text-blue-600" /> Generate 3D AR Model</span>
                     <div className="flex gap-2">
+                      {/* Hidden inputs */}
+                      <input type="file" accept="video/*" className="hidden" ref={videoInputRef} onChange={(e) => {
+                        if (e.target.files[0]) startVideoProcessing(e.target.files[0]);
+                      }} />
+                      <input type="file" accept="image/*" className="hidden" ref={fileInputRef} onChange={(e) => {
+                        if (e.target.files[0]) startAiProcessing(e.target.files[0]);
+                      }} />
                       <input type="file" accept=".glb,.gltf" className="hidden" ref={glbInputRef} onChange={(e) => {
                         if (e.target.files[0]) uploadGlbFile(e.target.files[0]);
                       }} />
-                      <input type="file" accept="video/*,image/*" className="hidden" ref={fileInputRef} onChange={(e) => {
-                        if (e.target.files[0]) startAiProcessing(e.target.files[0]);
-                      }} />
-                      <button type="button" onClick={() => glbInputRef.current?.click()} className="text-xs bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-emerald-200 transition-colors">
-                        <Upload size={14} /> Upload .glb
-                      </button>
+                      {/* Scan Dish camera fallback (single image) */}
                       <button type="button" onClick={openDishCamera} disabled={isCameraStarting} className="text-xs bg-purple-100 text-purple-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-purple-200 transition-colors disabled:opacity-50">
                         {isCameraStarting ? <Loader2 size={14} className="animate-spin" /> : <Camera size={14} />} {isCameraStarting ? 'Opening...' : 'Scan Dish'}
                       </button>
-                      <button type="button" onClick={() => fileInputRef.current?.click()} className="text-xs bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-lg flex items-center gap-1 hover:bg-blue-200 transition-colors">
-                        <Upload size={14} /> Upload Media
-                      </button>
                     </div>
                   </label>
-                  <input type="url" value={editingDish.modelUrl} onChange={e => setEditingDish({...editingDish, modelUrl: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500" placeholder="https://..." />
-                  
-                  {editingDish.modelUrl && (
-                    <div className="mt-4 rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 h-64 relative shadow-inner">
-                      <model-viewer src={editingDish.modelUrl} auto-rotate camera-controls shadow-intensity="1" style={{width: '100%', height: '100%', backgroundColor: 'transparent'}}></model-viewer>
-                      <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-neutral-800 text-[10px] px-3 py-1 rounded-full font-black shadow-sm uppercase tracking-wider">3D Preview</div>
+
+                  {/* Primary: Video Upload Card */}
+                  {scanState === 'idle' && !editingDish.modelUrl && (
+                    <div
+                      onClick={() => videoInputRef.current?.click()}
+                      onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); }}
+                      onDrop={(e) => {
+                        e.preventDefault(); e.stopPropagation();
+                        const file = e.dataTransfer.files?.[0];
+                        if (file && file.type.startsWith('video/')) startVideoProcessing(file);
+                      }}
+                      className="w-full border-2 border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-100/60 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                    >
+                      <div className="w-16 h-16 bg-blue-100 group-hover:bg-blue-200 rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
+                        <Video size={32} className="text-blue-600" />
+                      </div>
+                      <p className="font-black text-neutral-800 text-base mb-1">Upload Dish Video</p>
+                      <p className="text-xs text-neutral-500 text-center max-w-xs leading-relaxed">
+                        Record a short video rotating around the dish. We'll extract frames and build a photorealistic 3D AR model automatically.
+                      </p>
+                      <div className="flex items-center gap-4 mt-4">
+                        <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">MP4 · MOV · WebM</span>
+                        <span className="text-[10px] font-bold text-neutral-400">or drag & drop</span>
+                      </div>
                     </div>
                   )}
 
-                  {scanState === 'idle' && !editingDish.modelUrl && (
-                    <p className="text-xs text-neutral-500 mt-2"><Sparkles className="inline text-amber-500 mr-1" size={12}/>Use our AI Photogrammetry tool to generate a 3D model from your camera instantly.</p>
+                  {/* 3D Preview when model exists */}
+                  {editingDish.modelUrl && (
+                    <div className="relative">
+                      <div className="rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 h-64 relative shadow-inner">
+                        <model-viewer src={editingDish.modelUrl} auto-rotate camera-controls shadow-intensity="1" style={{width: '100%', height: '100%', backgroundColor: 'transparent'}}></model-viewer>
+                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-neutral-800 text-[10px] px-3 py-1 rounded-full font-black shadow-sm uppercase tracking-wider flex items-center gap-1"><Box size={10}/> 3D Preview</div>
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                        <button type="button" onClick={() => videoInputRef.current?.click()} className="flex-1 text-xs bg-blue-50 text-blue-700 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors border border-blue-200">
+                          <Video size={14} /> Re-upload Video
+                        </button>
+                        <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})} className="text-xs bg-red-50 text-red-600 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-red-100 transition-colors border border-red-200">
+                          <Trash2 size={14} /> Remove Model
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
 

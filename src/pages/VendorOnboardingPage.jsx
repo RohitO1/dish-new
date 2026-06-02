@@ -6,7 +6,7 @@ import { useAppContext } from '../context/AppContext';
 
 export default function VendorOnboardingPage() {
   const navigate = useNavigate();
-  const { user, restaurants, addRestaurant, setActiveRestId } = useAppContext();
+  const { user, restaurants, addRestaurant, setActiveRestId, supabaseUser, isInitializing } = useAppContext();
   
   const [name, setName] = useState('');
   const [cover, setCover] = useState(null);
@@ -14,6 +14,13 @@ export default function VendorOnboardingPage() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    if (isInitializing) return;
+    
+    if (!supabaseUser) {
+      navigate('/vendor-auth', { replace: true });
+      return;
+    }
+
     // Check if user already has a restaurant — handle both camelCase (local) and snake_case (Supabase)
     if (user && restaurants && restaurants.length > 0) {
       const uid = user.uid || user.phone;
