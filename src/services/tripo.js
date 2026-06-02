@@ -14,12 +14,14 @@ const DEMO_MODEL    = 'https://modelviewer.dev/shared-assets/models/Astronaut.gl
 
 // Use our proxy on Vercel (non-localhost), direct otherwise
 const IS_PROD = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
-const PROXY_BASE = '/api/tripo-proxy';
 
 async function tripoFetch(path, options = {}) {
   if (IS_PROD) {
-    // Route through our Vercel edge proxy
-    const proxyUrl = `${PROXY_BASE}?path=${encodeURIComponent(path)}`;
+    // Route through our split Vercel edge/node proxies
+    const proxyUrl = path === 'upload' 
+      ? '/api/tripo/upload'
+      : '/api/tripo/task';
+      
     return fetch(proxyUrl, options);
   }
   // Direct call locally (API key is in .env)
