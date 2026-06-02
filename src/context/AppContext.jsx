@@ -265,7 +265,16 @@ export const AppProvider = ({ children }) => {
   };
 
   const addRestaurant = async (restData) => {
-    if (!supabaseUser) return null;
+    if (!supabaseUser) {
+      showNotification('You must be logged in to create a restaurant.');
+      return null;
+    }
+
+    if (supabaseUser.id === 'DEV_BYPASS') {
+      const fakeId = 'mock-rest-' + Date.now();
+      setRestaurants(prev => [...prev, { id: fakeId, vendor_id: 'DEV_BYPASS', name: restData.name, cover: restData.cover }]);
+      return fakeId;
+    }
     
     const newRest = {
       vendor_id: supabaseUser.id,
@@ -320,6 +329,14 @@ export const AppProvider = ({ children }) => {
       showNotification('No restaurant selected. Please complete onboarding first.');
       return null;
     }
+
+    if (supabaseUser.id === 'DEV_BYPASS') {
+      const fakeId = 'mock-dish-' + Date.now();
+      setDishes(prev => [...prev, { ...dishData, id: fakeId }]);
+      showNotification('Mock Dish saved successfully (DEV_BYPASS)!');
+      return fakeId;
+    }
+
     try {
       // Strictly map only snake_case properties that exist in the DB
       const formattedDish = { 
@@ -404,6 +421,7 @@ export const AppProvider = ({ children }) => {
     favorites, toggleFavorite,
     nutritionHistory, saveNutritionRecord,
     userPreferences, updatePreferences,
+    setSupabaseUser, setIsInitializing
   };
 
   return (
