@@ -1,13 +1,18 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Space+Grotesk:wght@300..700&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-neutral-950 text-white font-sans antialiased selection:bg-blue-500/30;
+    @apply bg-obsidian-900 text-pearl font-sans antialiased selection:bg-champagne-500/30;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif tracking-tight;
   }
 }
-
 /* Custom scrollbar for horizontal scrolling in vendor dashboard */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

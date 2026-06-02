@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Utensils, Box, QrCode, Heart, Search, Flame, Activity } from 'lucide-react';
+import { Utensils, Box, QrCode, Heart, Search, Flame, Activity, Crown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTranslation } from 'react-i18next';
 import { useAppContext } from '../context/AppContext';
@@ -12,7 +12,7 @@ export default function MenuPage() {
   const navigate = useNavigate();
   const { activeRestId, dishes, setActiveDishId, restaurants, setActiveRestId, favorites, toggleFavorite, addToCart } = useAppContext();
   const { t } = useTranslation();
-  const [search, setSearch]     = useState('');
+  const [search, setSearch] = useState('');
   const [activeFilter, setActiveFilter] = useState('All');
 
   useEffect(() => {
@@ -20,7 +20,7 @@ export default function MenuPage() {
   }, [activeRestId, navigate]);
 
   const restaurant = restaurants.find(r => r.id === activeRestId);
-  const allDishes  = dishes.filter(d => d.restId === activeRestId);
+  const allDishes  = dishes.filter(d => d.restId === activeRestId || d.rest_id === activeRestId);
 
   const filtered = allDishes.filter(d => {
     const matchSearch = d.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -35,93 +35,128 @@ export default function MenuPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen bg-neutral-950 text-white pb-24 overflow-hidden">
+      className="flex flex-col h-screen pb-24 overflow-hidden"
+      style={{ background: '#0B0C10' }}>
 
-      {/* Hero Banner */}
-      <div className="h-52 bg-cover bg-center relative rounded-b-[2.5rem] overflow-hidden shadow-2xl shrink-0"
+      {/* ── Hero Banner ── */}
+      <div className="h-60 bg-cover bg-center relative rounded-b-[2.5rem] overflow-hidden shadow-2xl shrink-0"
         style={{ backgroundImage: `url(${restaurant?.cover})` }}>
-        <div className="absolute inset-0 bg-gradient-to-t from-neutral-950 via-neutral-900/50 to-transparent" />
+        <div className="absolute inset-0"
+          style={{ background: 'linear-gradient(to top, #0B0C10 0%, rgba(11,12,16,0.4) 50%, transparent 100%)' }} />
+        {/* Subtle gold grain */}
+        <div className="absolute inset-0 opacity-5"
+          style={{ background: 'linear-gradient(135deg, #D4AF37, transparent 60%)' }} />
+
         <div className="absolute bottom-5 left-5 right-5 flex justify-between items-end">
           <div>
+            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}
+              className="flex items-center gap-2 mb-1.5">
+              <Crown size={12} style={{ color: '#D4AF37' }} />
+              <span className="text-[10px] font-sans font-semibold tracking-[0.3em] uppercase" style={{ color: '#D4AF37' }}>
+                {allDishes.length} Signature Dishes
+              </span>
+            </motion.div>
             <motion.h1 initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.15 }}
-              className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white to-neutral-300 leading-tight">
+              className="text-3xl font-serif font-bold text-pearl leading-tight">
               {restaurant?.name}
             </motion.h1>
             <motion.p initial={{ y: 10, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.25 }}
-              className="text-xs text-neutral-400 font-bold mt-1 flex items-center gap-1.5">
-              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse inline-block" />
-              {allDishes.length} dishes available · AR Menu Active
+              className="text-xs text-neutral-500 font-sans mt-1 flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse inline-block" style={{ background: '#D4AF37' }} />
+              AR Menu Active
             </motion.p>
           </div>
           <div className="flex gap-2">
             <button onClick={() => navigate('/health')}
-              className="bg-emerald-600/80 backdrop-blur-md text-white p-3 rounded-full hover:bg-emerald-500/80 transition-colors shadow-lg">
-              <Activity size={18} />
+              className="p-3 rounded-full transition-all hover:scale-105"
+              style={{ background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.3)' }}>
+              <Activity size={18} style={{ color: '#D4AF37' }} />
             </button>
-            {/* Re-scan: keeps cart, orders, health data — only resets the active restaurant */}
-            <button
-              onClick={() => navigate('/scanner?rescan=true')}
-              title="Scan a different restaurant"
-              className="bg-white/10 backdrop-blur-md text-white p-3 rounded-full hover:bg-white/20 transition-colors border border-white/10">
-              <QrCode size={18} />
+            <button onClick={() => navigate('/scanner?rescan=true')}
+              className="p-3 rounded-full transition-all hover:scale-105"
+              style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <QrCode size={18} className="text-neutral-400" />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Search Bar */}
+      {/* ── Search Bar ── */}
       <div className="px-4 mt-4 shrink-0">
         <div className="relative">
-          <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
+          <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" />
           <input value={search} onChange={e => setSearch(e.target.value)}
-            placeholder="Search dishes..."
-            className="w-full bg-neutral-900/80 border border-neutral-800 rounded-2xl pl-10 pr-4 py-3 text-sm focus:outline-none focus:border-blue-600 transition-colors placeholder:text-neutral-600" />
+            placeholder="Search signature dishes..."
+            className="w-full pl-10 pr-4 py-3.5 rounded-2xl text-sm font-sans placeholder:text-neutral-700 focus:outline-none transition-all"
+            style={{
+              background: 'rgba(255,255,255,0.04)',
+              border: '1px solid rgba(255,255,255,0.07)',
+              color: '#FDFBF7',
+            }}
+            onFocus={e => { e.target.style.borderColor = 'rgba(212,175,55,0.3)'; }}
+            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+          />
         </div>
       </div>
 
-      {/* Filter Chips */}
+      {/* ── Filter Chips ── */}
       <div className="flex gap-2 px-4 mt-3 overflow-x-auto no-scrollbar shrink-0 pb-1">
         {FILTER_TABS.map(tab => (
-          <button key={tab} onClick={() => setActiveFilter(tab)}
-            className={`shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-black transition-all ${
+          <motion.button key={tab} onClick={() => setActiveFilter(tab)}
+            whileTap={{ scale: 0.95 }}
+            className="shrink-0 flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-sans font-semibold transition-all"
+            style={
               activeFilter === tab
-                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                : 'bg-neutral-900 text-neutral-400 border border-neutral-800 hover:border-neutral-700'
-            }`}>
-            {tab === 'Favorites' && <Heart size={11} className={activeFilter === 'Favorites' ? 'fill-white text-white' : 'text-red-400'} />}
+                ? { background: 'rgba(212,175,55,0.15)', border: '1px solid rgba(212,175,55,0.4)', color: '#D4AF37', boxShadow: '0 0 20px rgba(212,175,55,0.1)' }
+                : { background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', color: '#6B7280' }
+            }>
+            {tab === 'Favorites' && <Heart size={11} style={{ color: activeFilter === 'Favorites' ? '#D4AF37' : '#EF4444', fill: activeFilter === 'Favorites' ? '#D4AF37' : 'none' }} />}
             {tab}
-          </button>
+          </motion.button>
         ))}
       </div>
 
-      {/* Dish List */}
-      <div className="flex-1 overflow-y-auto px-4 mt-3 space-y-3 pb-2">
+      {/* ── Dish List ── */}
+      <div className="flex-1 overflow-y-auto px-4 mt-4 space-y-3 pb-2">
         <AnimatePresence mode="popLayout">
           {filtered.length === 0 && (
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-16 text-neutral-600">
-              <Utensils size={40} className="mx-auto mb-3 opacity-30" />
-              <p className="font-bold">No dishes found</p>
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-20">
+              <Utensils size={36} className="mx-auto mb-3 opacity-20 text-neutral-500" />
+              <p className="font-sans text-neutral-600 font-medium">No dishes found</p>
             </motion.div>
           )}
           {filtered.map((dish, index) => (
             <motion.div layout key={dish.id}
               initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-              transition={{ delay: index * 0.05 }}
-              className="bg-neutral-900/70 backdrop-blur-md border border-neutral-800 rounded-3xl p-4 flex gap-4 items-center cursor-pointer shadow-lg hover:border-neutral-700 hover:bg-neutral-900 transition-all"
+              transition={{ delay: index * 0.04 }}
+              className="flex gap-4 items-center cursor-pointer transition-all rounded-3xl p-4"
+              style={{
+                background: 'rgba(255,255,255,0.03)',
+                border: '1px solid rgba(255,255,255,0.06)',
+              }}
+              whileHover={{ scale: 1.005, borderColor: 'rgba(212,175,55,0.15)' }}
             >
               {/* Dish Thumbnail */}
               <div onClick={() => handleDishClick(dish.id)}
-                className="w-24 h-24 bg-neutral-800 rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0 shadow-inner group">
-                <Utensils size={28} className="text-neutral-600 group-hover:text-neutral-400 transition-colors z-10" />
+                className="w-24 h-24 rounded-2xl flex items-center justify-center relative overflow-hidden shrink-0"
+                style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                {dish.cover ? (
+                  <img src={dish.cover} alt={dish.name} className="w-full h-full object-cover" />
+                ) : (
+                  <Utensils size={26} className="text-neutral-700" />
+                )}
                 {dish.macros?.calories && (
-                  <div className="absolute top-1 left-1 bg-orange-500/20 border border-orange-500/30 rounded-lg px-1.5 py-0.5 flex items-center gap-0.5">
-                    <Flame size={9} className="text-orange-400" />
-                    <span className="text-[9px] font-black text-orange-400">{dish.macros.calories}</span>
+                  <div className="absolute top-1.5 left-1.5 flex items-center gap-0.5 px-1.5 py-0.5 rounded-lg"
+                    style={{ background: 'rgba(251,146,60,0.2)', border: '1px solid rgba(251,146,60,0.3)' }}>
+                    <Flame size={8} className="text-orange-400" />
+                    <span className="text-[9px] font-sans font-bold text-orange-400">{dish.macros.calories}</span>
                   </div>
                 )}
-                {dish.modelUrl && (
-                  <div className="absolute bottom-1 right-1 bg-blue-600/90 backdrop-blur-sm px-1.5 py-0.5 rounded-lg text-[10px] font-bold text-white flex items-center gap-0.5 z-10 shadow-[0_0_10px_rgba(37,99,235,0.6)] border border-white/20">
-                    <Box size={10}/> 3D AR
+                {(dish.modelUrl || dish.model_url) && (
+                  <div className="absolute bottom-1.5 right-1.5 px-1.5 py-0.5 rounded-lg flex items-center gap-0.5"
+                    style={{ background: 'rgba(212,175,55,0.9)', boxShadow: '0 0 10px rgba(212,175,55,0.4)' }}>
+                    <Box size={9} style={{ color: '#0B0C10' }} />
+                    <span className="text-[9px] font-sans font-black" style={{ color: '#0B0C10' }}>3D</span>
                   </div>
                 )}
               </div>
@@ -129,31 +164,49 @@ export default function MenuPage() {
               {/* Info */}
               <div className="flex-1 min-w-0" onClick={() => handleDishClick(dish.id)}>
                 <div className="flex justify-between items-start mb-1">
-                  <h3 className="font-bold text-base leading-tight truncate pr-2">{dish.name}</h3>
-                  <span className="font-black text-blue-400 bg-blue-900/20 px-2.5 py-1 rounded-lg text-sm shrink-0">${Number(dish.price).toFixed(2)}</span>
+                  <h3 className="font-serif font-bold text-base text-pearl leading-tight truncate pr-2">{dish.name}</h3>
+                  <span className="font-sans font-bold text-sm shrink-0 px-2.5 py-1 rounded-xl"
+                    style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
+                    ${Number(dish.price).toFixed(2)}
+                  </span>
                 </div>
-                <p className="text-xs text-neutral-500 line-clamp-1 mt-1 mb-2">{dish.description}</p>
+                <p className="text-xs text-neutral-600 font-sans line-clamp-1 mt-0.5 mb-2">{dish.description}</p>
                 <div className="flex flex-wrap gap-1.5">
-                  {dish.tags?.slice(0,2).map(tag => (
-                    <span key={tag} className="text-[10px] font-bold bg-neutral-800 text-neutral-400 px-2 py-0.5 rounded-md">{tag}</span>
+                  {dish.tags?.slice(0, 2).map(tag => (
+                    <span key={tag} className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-md"
+                      style={{ background: 'rgba(255,255,255,0.05)', color: '#9CA3AF', border: '1px solid rgba(255,255,255,0.06)' }}>
+                      {tag}
+                    </span>
                   ))}
                   {dish.allergens?.length > 0 && (
-                    <span className="text-[10px] font-bold bg-red-900/30 text-red-400 px-2 py-0.5 rounded-md">⚠ Allergens</span>
+                    <span className="text-[10px] font-sans font-semibold px-2 py-0.5 rounded-md"
+                      style={{ background: 'rgba(239,68,68,0.1)', color: '#F87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+                      ⚠ Allergens
+                    </span>
                   )}
                 </div>
               </div>
 
-              {/* Heart button + Quick Add */}
-              <div className="flex flex-col items-center gap-2 shrink-0">
+              {/* Actions */}
+              <div className="flex flex-col items-center gap-2.5 shrink-0">
                 <motion.button whileTap={{ scale: 1.4 }}
                   onClick={e => { e.stopPropagation(); toggleFavorite(dish.id); }}
-                  className="p-2 rounded-full hover:bg-neutral-800 transition-colors">
-                  <Heart size={18} className={favorites.includes(dish.id) ? 'text-red-500 fill-red-500' : 'text-neutral-600'} />
+                  className="p-2 rounded-full transition-all"
+                  style={{ background: favorites.includes(dish.id) ? 'rgba(239,68,68,0.15)' : 'transparent' }}>
+                  <Heart size={17} style={{
+                    color: favorites.includes(dish.id) ? '#EF4444' : '#374151',
+                    fill: favorites.includes(dish.id) ? '#EF4444' : 'none'
+                  }} />
                 </motion.button>
-                <motion.button whileTap={{ scale: 0.9 }} whileHover={{ scale: 1.05 }}
+                <motion.button whileTap={{ scale: 0.88 }} whileHover={{ scale: 1.05 }}
                   onClick={e => { e.stopPropagation(); addToCart(dish); }}
-                  className="w-8 h-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full flex items-center justify-center transition-colors shadow-lg shadow-blue-600/30">
-                  <span className="text-lg leading-none font-black">+</span>
+                  className="w-8 h-8 rounded-full flex items-center justify-center font-black text-lg transition-all"
+                  style={{
+                    background: 'linear-gradient(135deg, #D4AF37, #AA8C2C)',
+                    color: '#0B0C10',
+                    boxShadow: '0 0 15px rgba(212,175,55,0.3)'
+                  }}>
+                  +
                 </motion.button>
               </div>
             </motion.div>

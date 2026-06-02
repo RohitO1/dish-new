@@ -1,117 +1,26 @@
 /**
- * Tripo3D Service (Official API via Vercel Proxy)
- * 
- * In production (Vercel), all API calls route through /api/tripo-proxy
- * to avoid CORS issues. Locally, calls go directly to the Tripo API.
+ * 3D Model Generation Service
  *
- * Supports two generation modes:
- *   1. Image-to-Model  — single photo → 3D GLB
- *   2. Video-to-Model  — short video → 4 keyframes → multiview_to_model → 3D GLB
+ * Uses Hugging Face Inference API (TripoSR) — 100% FREE.
+ * Requires a free HF token set in VITE_HF_TOKEN (get one at huggingface.co/settings/tokens).
+ *
+ * On Vercel (production): routes through /api/tripo/generate proxy to avoid CORS.
+ * Locally: calls Hugging Face directly.
+ *
+ * Fallback: if no token, returns a demo model URL.
  */
 
-const TRIPO_API_KEY = import.meta.env.VITE_TRIPO_API_KEY || '';
-const DEMO_MODEL    = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
+const HF_TOKEN   = import.meta.env.VITE_HF_TOKEN || '';
+const DEMO_MODEL = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
 
-// Use our proxy on Vercel (non-localhost), direct otherwise
-const IS_PROD = !window.location.hostname.includes('localhost') && !window.location.hostname.includes('127.0.0.1');
-
-async function tripoFetch(path, options = {}) {
-  if (IS_PROD) {
-    // Route through our split Vercel edge/node proxies
-    const proxyUrl = path === 'upload' 
-      ? '/api/tripo/upload'
-      : '/api/tripo/task';
-      
-    return fetch(proxyUrl, options);
-  }
-  // Direct call locally (API key is in .env)
-  return fetch(`https://api.tripo3d.ai/v2/openapi/${path}`, {
-    ...options,
-    headers: {
-      'Authorization': `Bearer ${TRIPO_API_KEY}`,
-      ...(options.headers || {}),
-    }
-  });
-}
-
-// ─── Shared helpers ───────────────────────────────────────────────
-
-async function uploadFileToTripo(file) {
-  const fileType = file.type?.startsWith('video') ? 'video' : 'image';
-  const fileName = file.name || 'upload.jpg';
-
-  const form = new FormData();
-  form.append('file', file, fileName);
-  form.append('type', fileType);
-
-  const res = await tripoFetch('upload', { 
-    method: 'POST', 
-    body: form 
-  });
-  
-  if (!res.ok) {
-    const errText = await res.text().catch(() => res.status);
-    throw new Error(`Tripo upload failed (${res.status}): ${errText}`);
-  }
-  const data = await res.json();
-  const token = data.data?.image_token || data.data?.file_token;
-  if (!token) throw new Error('Upload succeeded but no token returned from Tripo.');
-  return token;
-}
-
-/**
- * Poll a Tripo task until completion and download the resulting GLB.
- * @param {string}   taskId
- * @param {function} onProgress  (pct, stage) — pct range is [progressStart..95]
- * @param {number}   progressStart  Where in the overall % range polling starts
- * @returns {Promise<File>}  The downloaded GLB as a File object
- */
-async function pollTaskToGlb(taskId, onProgress, progressStart = 35) {
-  let taskResult;
-  let attempts = 0;
-  while (attempts < 120) { // max ~6 min
-    await new Promise(r => setTimeout(r, 3000));
-    attempts++;
-
-    const pollRes = await tripoFetch(`task/${taskId}`);
-    const pollData = await pollRes.json();
-    const status = pollData.data?.status;
-
-    if (status === 'success') {
-      taskResult = pollData.data.result || pollData.data.output;
-      break;
-    } else if (status === 'failed' || status === 'cancelled') {
-      throw new Error(`Tripo3D task ${status}.`);
-    }
-
-    const apiProgress = pollData.data?.progress || 0;
-    const mapped = progressStart + (apiProgress * ((95 - progressStart) / 100));
-    onProgress(mapped, apiProgress > 50 ? 'texturing' : 'running');
-  }
-
-  if (!taskResult) throw new Error('Tripo3D task timed out after 6 minutes.');
-
-  // Download the GLB
-  onProgress(95, 'downloading');
-  const modelUrl = taskResult.model?.url || taskResult.pbr_model?.url;
-  if (!modelUrl) throw new Error('No model URL in Tripo result.');
-
-  const blobRes = await fetch(modelUrl);
-  if (!blobRes.ok) throw new Error(`Failed to download GLB from Tripo (${blobRes.status})`);
-  const blob = await blobRes.blob();
-
-  onProgress(100, 'success');
-  return new File([blob], `tripo_dish_${Date.now()}.glb`, { type: 'model/gltf-binary' });
-}
+// Route through proxy in production to avoid CORS
+const IS_PROD = !window.location.hostname.includes('localhost') &&
+               !window.location.hostname.includes('127.0.0.1');
 
 // ─── Frame extraction from video (pure browser, zero dependencies) ─
 
 /**
  * Extract N evenly-spaced frames from a video File using <video> + <canvas>.
- * @param {File}   videoFile
- * @param {number} count  Number of frames to extract (default 4)
- * @param {function} onProgress  (pct, stage) — pct range during extraction is [0..extractEndPct]
- * @returns {Promise<File[]>}  Array of JPEG File objects
  */
 export async function extractFramesFromVideo(videoFile, count = 4, onProgress = () => {}) {
   return new Promise((resolve, reject) => {
@@ -139,9 +48,8 @@ export async function extractFramesFromVideo(videoFile, count = 4, onProgress = 
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
 
-      // Evenly-spaced timestamps (avoid first/last 10% — often blurry)
-      const startPct = 0.10;
-      const endPct   = 0.90;
+      const startPct = 0.15;
+      const endPct   = 0.85;
       const step     = (endPct - startPct) / (count - 1);
       const timestamps = Array.from({ length: count }, (_, i) =>
         duration * (startPct + step * i)
@@ -182,71 +90,114 @@ export async function extractFramesFromVideo(videoFile, count = 4, onProgress = 
   });
 }
 
-
-// ─── Public API ───────────────────────────────────────────────────
+// ─── Core HF TripoSR generation ──────────────────────────────────
 
 /**
- * Generate a 3D GLB model from an image File using Tripo3D API.
- * @param {File}     imageFile   Image captured from camera or uploaded from gallery
+ * Convert an image File to base64 data URL.
+ */
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/**
+ * Call the Hugging Face Inference API with TripoSR to generate a 3D GLB.
+ * Returns a Blob of the GLB file.
+ */
+async function generateGlbFromHuggingFace(imageFile, onProgress) {
+  onProgress(10, 'uploading');
+
+  const imageBase64 = await fileToBase64(imageFile);
+
+  onProgress(25, 'queued');
+
+  // Use proxy in prod, direct in dev
+  const endpoint = IS_PROD
+    ? '/api/tripo/generate'
+    : 'https://api-inference.huggingface.co/models/stabilityai/TripoSR';
+
+  const headers = { 'Content-Type': 'application/json' };
+  if (!IS_PROD && HF_TOKEN) {
+    headers['Authorization'] = `Bearer ${HF_TOKEN}`;
+  }
+
+  onProgress(35, 'running');
+
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify({ inputs: imageBase64 }),
+  });
+
+  if (!res.ok) {
+    const errText = await res.text().catch(() => res.status);
+    throw new Error(`3D Generation failed (${res.status}): ${errText}`);
+  }
+
+  onProgress(80, 'downloading');
+
+  const blob = await res.blob();
+  if (!blob || blob.size < 1000) {
+    throw new Error('Received empty or invalid model data from the API.');
+  }
+
+  onProgress(100, 'success');
+  return new File([blob], `dish_3d_${Date.now()}.glb`, { type: 'model/gltf-binary' });
+}
+
+// ─── Public API ──────────────────────────────────────────────────
+
+/**
+ * Generate a 3D GLB model from a single image File.
+ * Uses HuggingFace TripoSR (FREE).
+ *
+ * @param {File}     imageFile
  * @param {function} onProgress  (pct: number, stage: string) => void
- * @returns {Promise<File|string>} Returns a .glb File object, or a fallback demo string URL
+ * @returns {Promise<File|string>}  .glb File, or demo URL on fallback
  */
 export async function generateModelFromImage(imageFile, onProgress = () => {}) {
-  if (!imageFile || (!TRIPO_API_KEY && !IS_PROD)) {
-    console.warn('No Tripo API key or image provided. Falling back to demo mode.');
+  if (!imageFile) {
+    console.warn('No image provided. Returning demo model.');
+    onProgress(100, 'success');
+    return DEMO_MODEL;
+  }
+
+  // If no token locally AND not in prod — return demo
+  if (!HF_TOKEN && !IS_PROD) {
+    console.warn('No VITE_HF_TOKEN set. Using demo model. Get a free token at huggingface.co/settings/tokens');
     onProgress(10, 'uploading');
-    await new Promise(r => setTimeout(r, 800));
+    await new Promise(r => setTimeout(r, 600));
     onProgress(50, 'running');
     await new Promise(r => setTimeout(r, 800));
     onProgress(100, 'success');
     return DEMO_MODEL;
   }
 
-  // 1. Upload the image
-  onProgress(10, 'uploading');
-  const fileToken = await uploadFileToTripo(imageFile);
-
-  // 2. Submit image-to-model task
-  onProgress(25, 'queued');
-  const taskRes = await tripoFetch('task', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'image_to_model',
-      file: {
-        type: imageFile.name.split('.').pop() || 'jpg',
-        file_token: fileToken
-      }
-    })
-  });
-
-  if (!taskRes.ok) {
-    const errText = await taskRes.text().catch(() => taskRes.status);
-    throw new Error(`Tripo task creation failed (${taskRes.status}): ${errText}`);
-  }
-  const taskData = await taskRes.json();
-  const taskId = taskData.data?.task_id;
-  if (!taskId) throw new Error('No task_id returned from Tripo.');
-
-  // 3. Poll + download
-  onProgress(35, 'running');
-  return pollTaskToGlb(taskId, onProgress, 35);
+  return generateGlbFromHuggingFace(imageFile, onProgress);
 }
 
 /**
  * Generate a 3D GLB model from a video File.
- * Pipeline: extract 4 keyframes → upload each → multiview_to_model → poll → GLB
+ * Extracts the best frame and passes it to TripoSR.
  *
- * @param {File}     videoFile   Video of the dish (any format the browser can play)
- * @param {function} onProgress  (pct: number, stage: string) => void
- * @returns {Promise<File|string>} Returns a .glb File object, or a fallback demo URL
+ * @param {File}     videoFile
+ * @param {function} onProgress
+ * @returns {Promise<File|string>}
  */
 export async function generateModelFromVideo(videoFile, onProgress = () => {}) {
-  if (!videoFile || (!TRIPO_API_KEY && !IS_PROD)) {
-    console.warn('No Tripo API key or video provided. Falling back to demo mode.');
+  if (!videoFile) {
+    console.warn('No video provided. Returning demo model.');
+    onProgress(100, 'success');
+    return DEMO_MODEL;
+  }
+
+  if (!HF_TOKEN && !IS_PROD) {
+    console.warn('No VITE_HF_TOKEN set. Using demo model.');
     onProgress(5, 'extracting');
-    await new Promise(r => setTimeout(r, 600));
-    onProgress(20, 'uploading');
     await new Promise(r => setTimeout(r, 600));
     onProgress(50, 'running');
     await new Promise(r => setTimeout(r, 800));
@@ -254,46 +205,15 @@ export async function generateModelFromVideo(videoFile, onProgress = () => {}) {
     return DEMO_MODEL;
   }
 
-  // 1. Extract 4 keyframes from the video
-  onProgress(2, 'extracting');
-  const frames = await extractFramesFromVideo(videoFile, 4, (pct) => {
-    // Map extraction 0-100% → overall 2-12%
-    onProgress(2 + (pct * 0.10), 'extracting');
+  // Extract the single best frame (middle of the video) for TripoSR
+  onProgress(5, 'extracting');
+  const frames = await extractFramesFromVideo(videoFile, 1, (pct) => {
+    onProgress(5 + pct * 0.10, 'extracting');
   });
 
-  if (frames.length < 2) {
-    throw new Error('Could not extract enough frames from the video. Try a longer video.');
+  if (!frames.length) {
+    throw new Error('Could not extract a frame from the video.');
   }
 
-  // 2. Upload all frames to Tripo in parallel
-  onProgress(14, 'uploading');
-  const tokens = [];
-  for (let i = 0; i < frames.length; i++) {
-    const token = await uploadFileToTripo(frames[i]);
-    tokens.push({ type: 'jpg', file_token: token });
-    onProgress(14 + ((i + 1) / frames.length) * 10, 'uploading');
-  }
-
-  // 3. Submit multiview_to_model task
-  onProgress(26, 'queued');
-  const taskRes = await tripoFetch('task', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: 'multiview_to_model',
-      files: tokens
-    })
-  });
-
-  if (!taskRes.ok) {
-    const errText = await taskRes.text().catch(() => taskRes.status);
-    throw new Error(`Tripo multiview task creation failed (${taskRes.status}): ${errText}`);
-  }
-  const taskData = await taskRes.json();
-  const taskId = taskData.data?.task_id;
-  if (!taskId) throw new Error('No task_id returned from Tripo.');
-
-  // 4. Poll + download
-  onProgress(30, 'running');
-  return pollTaskToGlb(taskId, onProgress, 30);
+  return generateGlbFromHuggingFace(frames[0], onProgress);
 }

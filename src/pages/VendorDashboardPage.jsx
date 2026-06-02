@@ -89,12 +89,12 @@ export default function VendorDashboardPage() {
   // Allergens state (part of editingDish)
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy'];
 
-  // Stage labels shared between image and video pipelines
+  // Stage labels for HuggingFace TripoSR pipeline
   const STAGE_LABELS = {
-    extracting: 'Extracting keyframes from video...',
-    queued:     'Queued on Tripo servers...',
-    uploading:  'Uploading frames to AI...',
-    running:    'Generating 3D model...',
+    extracting: 'Extracting best frame from video...',
+    queued:     'Connecting to AI server...',
+    uploading:  'Uploading image to TripoSR...',
+    running:    'Generating 3D model (AI magic!)...',
     texturing:  'Applying photorealistic textures...',
     downloading:'Downloading model to cloud...',
     success:    '3D AR Model ready!',
@@ -278,37 +278,54 @@ export default function VendorDashboardPage() {
   const todayRevenue = completed.reduce((sum, o) => sum + o.total, 0);
 
   return (
-    <div className="flex flex-col h-screen bg-neutral-100 text-neutral-900 overflow-hidden font-sans">
+    <div className="flex flex-col h-screen overflow-hidden font-sans" style={{ background: '#0B0C10', color: '#FDFBF7' }}>
       {/* Header */}
-      <div className="bg-white p-4 shadow-sm flex justify-between items-center border-b z-10">
+      <div className="p-4 flex justify-between items-center z-10 shrink-0"
+        style={{ background: 'rgba(11,12,16,0.98)', borderBottom: '1px solid rgba(212,175,55,0.12)', backdropFilter: 'blur(20px)' }}>
         <div className="flex items-center gap-3">
-          <div className="bg-gradient-to-tr from-emerald-600 to-teal-500 p-2.5 rounded-xl text-white shadow-lg shadow-emerald-500/30">
-            <LayoutDashboard size={20} />
+          <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg,rgba(212,175,55,0.2),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)' }}>
+            <LayoutDashboard size={20} style={{ color: '#D4AF37' }} />
           </div>
           <div>
-            <h1 className="font-black text-xl leading-tight flex items-center gap-2">
-              <Store size={16} className="text-emerald-600" />
-              {currentRestaurant?.name || user?.displayName || 'Vendor OS'}
+            <h1 className="font-serif font-bold text-lg leading-tight flex items-center gap-2 text-pearl">
+              {currentRestaurant?.name || 'Dashboard'}
             </h1>
-            <p className="text-xs text-emerald-600 font-bold flex items-center gap-1"><span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span>{user?.email || t('vendor.cloudSynced')}</p>
+            <p className="text-xs font-sans flex items-center gap-1.5" style={{ color: '#6B7280' }}>
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#D4AF37' }}></span>
+              {user?.email || 'Cloud Synced'}
+            </p>
           </div>
         </div>
-        <button onClick={handleLogout} className="text-sm font-bold text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition-colors flex items-center gap-2">
-          <LogOut size={15} /> Sign Out
+        <button onClick={handleLogout}
+          className="text-xs font-sans font-medium px-4 py-2 rounded-xl transition-all flex items-center gap-2"
+          style={{ background: 'rgba(239,68,68,0.1)', color: '#F87171', border: '1px solid rgba(239,68,68,0.2)' }}>
+          <LogOut size={14} /> Sign Out
         </button>
       </div>
 
       {/* Tabs */}
-      <div className="flex bg-white border-b border-neutral-200 shrink-0 overflow-x-auto no-scrollbar shadow-sm z-0">
-        <button onClick={() => setVendorTab('orders')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'orders' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><ListOrdered size={18}/> {t('vendor.kitchenDisplay')}</button>
-        <button onClick={() => setVendorTab('analytics')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'analytics' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><TrendingUp size={18}/> {t('vendor.analytics')}</button>
-        <button onClick={() => setVendorTab('menu')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'menu' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><Utensils size={18}/> {t('vendor.menu3D')}</button>
-        <button onClick={() => setVendorTab('qr')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'qr' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><QrIcon size={18}/> {t('vendor.qr')}</button>
-        <button onClick={() => setVendorTab('staff')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'staff' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><Users size={18}/> Staff</button>
-        <button onClick={() => setVendorTab('settings')} className={`px-6 py-4 text-sm font-black flex items-center gap-2 border-b-[3px] whitespace-nowrap transition-colors ${vendorTab === 'settings' ? 'border-emerald-600 text-emerald-700 bg-emerald-50/50' : 'border-transparent text-neutral-500 hover:bg-neutral-50'}`}><Settings size={18}/> Settings</button>
+      <div className="flex shrink-0 overflow-x-auto no-scrollbar z-0"
+        style={{ background: 'rgba(11,12,16,0.95)', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+        {[
+          { key: 'orders',    icon: ListOrdered, label: t('vendor.kitchenDisplay') },
+          { key: 'analytics', icon: TrendingUp,   label: t('vendor.analytics') },
+          { key: 'menu',      icon: Utensils,     label: t('vendor.menu3D') },
+          { key: 'qr',        icon: QrIcon,       label: t('vendor.qr') },
+          { key: 'staff',     icon: Users,        label: 'Staff' },
+          { key: 'settings',  icon: Settings,     label: 'Settings' },
+        ].map(tab => (
+          <button key={tab.key} onClick={() => setVendorTab(tab.key)}
+            className="px-5 py-4 text-xs font-sans font-semibold flex items-center gap-2 border-b-2 whitespace-nowrap transition-all"
+            style={vendorTab === tab.key
+              ? { borderColor: '#D4AF37', color: '#D4AF37', background: 'rgba(212,175,55,0.06)' }
+              : { borderColor: 'transparent', color: '#6B7280' }
+            }>
+            <tab.icon size={16} /> {tab.label}
+          </button>
+        ))}
       </div>
 
-      <div className="flex-1 overflow-hidden relative bg-neutral-50">
+      <div className="flex-1 overflow-hidden relative" style={{ background: '#0F1014' }}>
         <AnimatePresence mode="wait">
           {vendorTab === 'orders' && (
             <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-x-auto p-6 flex gap-6 items-start">

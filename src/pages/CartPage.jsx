@@ -59,13 +59,19 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="flex flex-col h-screen bg-neutral-950 text-white items-center justify-center pb-20">
+      <div className="flex flex-col h-screen items-center justify-center pb-20" style={{ background: '#0B0C10' }}>
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center">
-          <div className="w-24 h-24 bg-neutral-900 rounded-full flex items-center justify-center mb-6 shadow-inner">
-            <ShoppingCart size={40} className="text-neutral-600" />
+          <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
+            style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}>
+            <ShoppingCart size={36} style={{ color: '#D4AF37', opacity: 0.5 }} />
           </div>
-          <p className="text-neutral-400 text-lg mb-6">{t('cart.empty')}</p>
-          <button onClick={() => navigate('/menu')} className="bg-blue-600 text-white font-bold px-8 py-3 rounded-full hover:bg-blue-500 transition-colors shadow-lg shadow-blue-900/20">{t('cart.browseMenu')}</button>
+          <p className="font-serif text-xl text-pearl mb-2">{t('cart.empty')}</p>
+          <p className="text-neutral-600 text-sm font-sans mb-8">Your selections await.</p>
+          <button onClick={() => navigate('/menu')}
+            className="font-sans font-bold px-8 py-3.5 rounded-full transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 4px 20px rgba(212,175,55,0.3)' }}>
+            {t('cart.browseMenu')}
+          </button>
         </motion.div>
         <BottomNav/>
       </div>
@@ -146,26 +152,28 @@ export default function CartPage() {
 
   if (step === 'success') {
     return (
-      <div className="flex flex-col h-screen bg-neutral-950 text-white pt-20 px-6">
-        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center text-center space-y-6">
-          <div className="w-24 h-24 bg-emerald-600/20 rounded-full flex items-center justify-center border border-emerald-500 shadow-[0_0_40px_rgba(16,185,129,0.3)]">
-             <Check size={48} className="text-emerald-400" />
+      <div className="flex flex-col h-screen pt-20 px-6" style={{ background: '#0B0C10' }}>
+        <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center text-center space-y-5">
+          <div className="w-24 h-24 rounded-full flex items-center justify-center"
+            style={{ border: '2px solid rgba(212,175,55,0.5)', background: 'radial-gradient(circle, rgba(212,175,55,0.15), transparent)', boxShadow: '0 0 50px rgba(212,175,55,0.25)' }}>
+            <Check size={42} style={{ color: '#D4AF37' }} />
           </div>
-          <h2 className="text-3xl font-black">Pre-Order Placed!</h2>
-          <p className="text-neutral-400">Your order has been sent to the vendor successfully.</p>
-          
-          <div className="bg-neutral-900 border border-neutral-800 p-6 rounded-3xl w-full max-w-sm mt-4 text-left shadow-2xl">
-            <h3 className="font-bold text-lg text-emerald-400 border-b border-emerald-900/50 pb-3 mb-4 flex items-center gap-2">
-              <Store size={18} /> Vendor Contact Info
+          <h2 className="text-3xl font-serif font-bold text-pearl">Pre-Order Placed!</h2>
+          <p className="text-neutral-500 font-sans text-sm">Your order has been confirmed by the restaurant.</p>
+          <div className="rounded-3xl p-6 w-full max-w-sm mt-2 text-left"
+            style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(212,175,55,0.15)' }}>
+            <h3 className="font-sans font-semibold text-sm mb-4 flex items-center gap-2" style={{ color: '#D4AF37' }}>
+              <Store size={16} /> Vendor Contact
             </h3>
             <div className="space-y-3">
-              <p className="text-sm flex items-center gap-3"><MapPin size={16} className="text-neutral-500" /> <span className="font-medium text-white">{currentRestaurant?.name}</span></p>
-              <p className="text-sm flex items-center gap-3"><Phone size={16} className="text-neutral-500" /> <span className="font-medium text-white">{currentRestaurant?.phone || '+1 (555) 123-4567'}</span></p>
-              <p className="text-sm flex items-center gap-3"><User size={16} className="text-neutral-500" /> <span className="font-medium text-white">contact@{currentRestaurant?.name.replace(/\s+/g, '').toLowerCase() || 'vendor'}.com</span></p>
+              <p className="text-sm font-sans flex items-center gap-3 text-neutral-400"><MapPin size={15} className="text-neutral-600" />{currentRestaurant?.name}</p>
+              <p className="text-sm font-sans flex items-center gap-3 text-neutral-400"><Phone size={15} className="text-neutral-600" />{currentRestaurant?.phone || '+1 (555) 123-4567'}</p>
+              <p className="text-sm font-sans flex items-center gap-3 text-neutral-400"><User size={15} className="text-neutral-600" />contact@{currentRestaurant?.name?.replace(/\s+/g, '').toLowerCase() || 'vendor'}.com</p>
             </div>
           </div>
-          
-          <button onClick={() => navigate('/orders')} className="mt-8 w-full max-w-sm bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-black py-4 rounded-xl hover:bg-emerald-500 transition-colors shadow-lg">
+          <button onClick={() => navigate('/orders')}
+            className="mt-6 w-full max-w-sm font-sans font-bold py-4 rounded-2xl transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 8px 30px rgba(212,175,55,0.35)' }}>
             View My Orders →
           </button>
         </motion.div>
@@ -174,10 +182,16 @@ export default function CartPage() {
   }
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col h-screen bg-neutral-950 text-white pb-24">
-      <div className="p-6 border-b border-neutral-900 flex items-center gap-4 bg-neutral-900/50 backdrop-blur-md sticky top-0 z-10">
-        <button onClick={handleBack} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors"><ChevronLeft size={24} /></button>
-        <h1 className="text-2xl font-black">{t('cart.checkout')}</h1>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="flex flex-col h-screen pb-24" style={{ background: '#0B0C10' }}>
+      <div className="p-5 flex items-center gap-4 sticky top-0 z-10"
+        style={{ background: 'rgba(11,12,16,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(212,175,55,0.08)' }}>
+        <button onClick={handleBack}
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.07)' }}>
+          <ChevronLeft size={22} className="text-neutral-300" />
+        </button>
+        <h1 className="text-xl font-serif font-bold text-pearl">{t('cart.checkout')}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto p-6">
@@ -385,18 +399,38 @@ export default function CartPage() {
         </AnimatePresence>
       </div>
 
-      <div className="fixed bottom-20 w-full p-6 bg-neutral-900/90 backdrop-blur-xl border-t border-neutral-800 rounded-t-[2rem]">
-        {step === 'cart' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{t('cart.proceedToCheckout')}</motion.button>}
-        {step === 'type' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">{ orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Proceed with Pre-Order'}</motion.button>}
-        {/* auth step: no bottom button — the Google button lives inside the scroll area */}
-        {step === 'details' && <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} onClick={handleNext} className="w-full bg-blue-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(37,99,235,0.3)]">Continue to Payment</motion.button>}
+      <div className="fixed bottom-20 w-full p-5"
+        style={{ background: 'rgba(11,12,16,0.95)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(212,175,55,0.08)', borderRadius: '2rem 2rem 0 0' }}>
+        {step === 'cart' && (
+          <motion.button whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
+            className="w-full font-sans font-bold py-4 rounded-2xl transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 6px 30px rgba(212,175,55,0.3)' }}>
+            {t('cart.proceedToCheckout')}
+          </motion.button>
+        )}
+        {step === 'type' && (
+          <motion.button whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
+            className="w-full font-sans font-bold py-4 rounded-2xl transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 6px 30px rgba(212,175,55,0.3)' }}>
+            {orderConf.type === 'dine_in' ? 'Continue to Payment' : 'Proceed with Pre-Order'}
+          </motion.button>
+        )}
+        {step === 'details' && (
+          <motion.button whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }} onClick={handleNext}
+            className="w-full font-sans font-bold py-4 rounded-2xl transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 6px 30px rgba(212,175,55,0.3)' }}>
+            Continue to Payment
+          </motion.button>
+        )}
         {step === 'pay' && (
-          <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext} 
-            className="w-full bg-emerald-600 text-white font-black py-4 rounded-2xl shadow-[0_0_20px_rgba(16,185,129,0.3)] flex justify-center items-center gap-2 transition-all">
+          <motion.button whileHover={{ scale: 1.02, y: -1 }} whileTap={{ scale: 0.98 }} disabled={isProcessing} onClick={handleNext}
+            className="w-full font-sans font-bold py-4 rounded-2xl flex justify-center items-center gap-2 transition-all"
+            style={{ background: 'linear-gradient(135deg,#D4AF37,#AA8C2C)', color: '#0B0C10', boxShadow: '0 6px 30px rgba(212,175,55,0.3)', opacity: isProcessing ? 0.7 : 1 }}>
             {isProcessing ? (
-              <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" /> Processing...</>
+              <><motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, ease: 'linear', duration: 1 }}
+                className="w-5 h-5 border-2 rounded-full" style={{ borderColor: 'rgba(11,12,16,0.3)', borderTopColor: '#0B0C10' }} /> Processing...</>
             ) : (
-              <>{t('cart.payAndPlace')} • ${finalTotal.toFixed(2)}</>
+              <>{t('cart.payAndPlace')} · ${finalTotal.toFixed(2)}</>
             )}
           </motion.button>
         )}
