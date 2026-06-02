@@ -5,67 +5,91 @@
  * The VITE_TRIPO_API_KEY env var must be set in Vercel dashboard.
  */
 
-export const config = { runtime: 'edge' };
+export const config = {
+  api: {
+    bodyParser: false, // Disables Vercel's default body parsing so we can read the raw stream
+  },
+};
 
-const corsHeaders = () => ({
+const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-File-Type',
-});
+};
 
-export default async function handler(req) {
+export default async function handler(req, res) {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers: corsHeaders() });
+    res.status(200);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      res.setHeader(key, value);
+    }
+    return res.end();
   }
 
-  const url = new URL(req.url);
-  const path = url.searchParams.get('path');
+  const { path } = req.query;
   if (!path) {
-    return new Response(JSON.stringify({ error: 'Missing path parameter' }), { status: 400 });
+    res.status(400);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      res.setHeader(key, value);
+    }
+    return res.json({ error: 'Missing path parameter' });
   }
 
   const API_KEY = process.env.VITE_TRIPO_API_KEY;
-  const tripoUrl = path === 'httpbin' ? 'https://httpbin.org/post' : `https://api.tripo3d.ai/v2/openapi/${path}`;
+  const tripoUrl = `https://api.tripo3d.ai/v2/openapi/${path}`;
 
   try {
     let fetchBody;
-    let fetchHeaders = new Headers();
-    fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
+    let fetchHeaders = {
+      'Authorization': `Bearer ${API_KEY}`
+    };
 
     if (req.method === 'POST') {
-      const contentType = req.headers.get('content-type') || '';
+      const contentType = req.headers['content-type'] || '';
       
+      // Read the entire raw body stream
+      const chunks = [];
+      for await (const chunk of req) {
+        chunks.push(chunk);
+      }
+      const reqBuffer = Buffer.concat(chunks);
+
       if (contentType.includes('application/octet-stream')) {
-        // Construct FormData internally to avoid pass-through corruption!
-        // Edge fetch can send FormData perfectly, it just can't forward an existing stream perfectly.
-        const reqBuffer = await req.arrayBuffer();
-        const blob = new Blob([reqBuffer], { type: 'application/octet-stream' });
+        const fileName = req.headers['x-file-name'] || 'upload.jpg';
+        const fileType = req.headers['x-file-type'] || 'image';
         
-        const fileName = req.headers.get('x-file-name') || 'upload.jpg';
-        const fileType = req.headers.get('x-file-type') || 'image';
+        const boundary = '----Boundary' + Math.random().toString(36).substring(2);
         
-        const form = new FormData();
-        form.append('file', blob, fileName);
-        form.append('type', fileType);
+        const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${fileName}"\r\nContent-Type: image/jpeg\r\n\r\n`;
+        const footer = `\r\n--${boundary}\r\nContent-Disposition: form-data; name="type"\r\n\r\n${fileType}\r\n--${boundary}--\r\n`;
         
-        fetchBody = form;
+        const headerBytes = Buffer.from(header, 'utf-8');
+        const footerBytes = Buffer.from(footer, 'utf-8');
+        
+        const bodyBytes = Buffer.concat([headerBytes, reqBuffer, footerBytes]);
+        
+        fetchHeaders['Content-Type'] = `multipart/form-data; boundary=${boundary}`;
+        fetchHeaders['Content-Length'] = bodyBytes.length.toString();
+        fetchBody = bodyBytes;
       } else {
         // Buffer normal JSON requests
-        fetchBody = await req.arrayBuffer();
-        for (const [key, value] of req.headers.entries()) {
+        fetchBody = reqBuffer;
+        for (const [key, value] of Object.entries(req.headers)) {
           if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
-            fetchHeaders.set(key, value);
+            fetchHeaders[key] = value;
           }
         }
       }
     } else {
-      for (const [key, value] of req.headers.entries()) {
+      for (const [key, value] of Object.entries(req.headers)) {
         if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
-          fetchHeaders.set(key, value);
+          fetchHeaders[key] = value;
         }
       }
     }
 
+    // Use native fetch to send exactly the bytes we constructed
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
       headers: fetchHeaders,
@@ -73,19 +97,21 @@ export default async function handler(req) {
     });
 
     const data = await upstreamRes.arrayBuffer();
+    const outBuffer = Buffer.from(data);
 
-    return new Response(data, {
-      status: upstreamRes.status,
-      headers: {
-        ...corsHeaders(),
-        'Content-Type': upstreamRes.headers.get('content-type') || 'application/json',
-      }
-    });
+    res.status(upstreamRes.status);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      res.setHeader(key, value);
+    }
+    res.setHeader('Content-Type', upstreamRes.headers.get('content-type') || 'application/json');
+    res.end(outBuffer);
+    
   } catch (err) {
     console.error('Tripo Proxy Error:', err);
-    return new Response(JSON.stringify({ error: err.message }), { 
-      status: 500, 
-      headers: corsHeaders() 
-    });
+    res.status(500);
+    for (const [key, value] of Object.entries(corsHeaders)) {
+      res.setHeader(key, value);
+    }
+    res.json({ error: err.message });
   }
 }
