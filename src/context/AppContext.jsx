@@ -122,12 +122,27 @@ export const AppProvider = ({ children }) => {
     
     const fetchDishes = async () => {
       const { data } = await supabase.from('dishes').select('*');
-      if (data) setDishes(data);
+      if (data) {
+        // Map snake_case from DB to camelCase for frontend
+        const mapped = data.map(d => ({
+          ...d,
+          modelUrl: d.model_url || d.modelUrl,
+          restId: d.rest_id || d.restId
+        }));
+        setDishes(mapped);
+      }
     };
 
     const fetchRestaurants = async () => {
       const { data } = await supabase.from('restaurants').select('*');
-      if (data) setRestaurants(data);
+      if (data) {
+        // Map snake_case from DB to camelCase for frontend
+        const mapped = data.map(r => ({
+          ...r,
+          vendorId: r.vendor_id || r.vendorId
+        }));
+        setRestaurants(mapped);
+      }
     };
 
     fetchOrders();
@@ -252,8 +267,8 @@ export const AppProvider = ({ children }) => {
       if (error) throw error;
       return data[0].id;
     } catch (error) {
-      console.error(error);
-      showNotification('Failed to create restaurant.');
+      console.error('Create restaurant error:', error);
+      showNotification(`Failed to create restaurant: ${error.message || error.details || 'Unknown error'}`);
       return null;
     }
   };
@@ -280,8 +295,16 @@ export const AppProvider = ({ children }) => {
   const addDish = async (dishData) => {
     if (!supabaseUser) return null;
     try {
-      // Send both camelCase and snake_case to be safe
-      const formattedDish = { ...dishData, rest_id: dishData.restId };
+      // Strictly map only snake_case properties for insertion
+      const formattedDish = { 
+        name: dishData.name,
+        price: dishData.price,
+        description: dishData.description,
+        model_url: dishData.modelUrl,
+        macros: dishData.macros,
+        tags: dishData.tags,
+        rest_id: dishData.restId
+      };
       
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
@@ -296,7 +319,17 @@ export const AppProvider = ({ children }) => {
   const updateDish = async (dishId, updates) => {
     if (!supabaseUser) return;
     try {
-      const { error } = await supabase.from('dishes').update(updates).eq('id', dishId);
+      const formattedUpdates = { ...updates };
+      if (formattedUpdates.modelUrl !== undefined) {
+        formattedUpdates.model_url = formattedUpdates.modelUrl;
+        delete formattedUpdates.modelUrl;
+      }
+      if (formattedUpdates.restId !== undefined) {
+        formattedUpdates.rest_id = formattedUpdates.restId;
+        delete formattedUpdates.restId;
+      }
+
+      const { error } = await supabase.from('dishes').update(formattedUpdates).eq('id', dishId);
       if (error) throw error;
       showNotification('Dish updated successfully.');
     } catch (error) {
