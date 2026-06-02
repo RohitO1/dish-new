@@ -34,13 +34,18 @@ export default async function handler(req) {
   try {
     const isFormData = req.headers.get('content-type')?.includes('multipart');
 
+    // Clone headers to preserve Content-Type, Content-Length, boundary, etc.
+    const headers = new Headers();
+    for (const [key, value] of req.headers.entries()) {
+      if (!['host', 'connection', 'origin', 'referer'].includes(key.toLowerCase())) {
+        headers.set(key, value);
+      }
+    }
+    headers.set('Authorization', `Bearer ${API_KEY}`);
+
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
-      headers: {
-        'Authorization': `Bearer ${API_KEY}`,
-        // Preserve the original Content-Type boundary for form data
-        ...(isFormData ? { 'Content-Type': req.headers.get('content-type') } : { 'Content-Type': 'application/json' }),
-      },
+      headers,
       body: req.method === 'POST' ? req.body : undefined,
       duplex: 'half',
     });

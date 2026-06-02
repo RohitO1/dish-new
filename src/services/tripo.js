@@ -39,7 +39,8 @@ async function tripoFetch(path, options = {}) {
  */
 async function uploadFileToTripo(file) {
   const form = new FormData();
-  form.append('file', file);
+  form.append('file', file, file.name || 'upload.jpg');
+  form.append('type', file.type?.startsWith('video') ? 'video' : 'image');
 
   const res = await tripoFetch('upload', { method: 'POST', body: form });
   if (!res.ok) {
