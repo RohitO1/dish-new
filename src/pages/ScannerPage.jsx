@@ -200,9 +200,10 @@ export default function ScannerPage() {
 
       {/* Vendor Login Link */}
       {!scanned && (
-        <div className="relative z-20 pb-8 text-center">
-          <button onClick={() => navigate('/vendor-auth')} className="text-neutral-500 hover:text-white text-xs font-medium transition-colors">
-            Restaurant Partner? Sign in here.
+        <div className="absolute bottom-8 left-0 right-0 z-30 flex justify-center pb-safe">
+          <button onClick={() => navigate('/vendor-auth')} 
+            className="bg-black/50 backdrop-blur-md border border-white/10 text-neutral-300 hover:text-white text-xs font-bold px-5 py-2.5 rounded-full transition-all hover:bg-black/70 shadow-lg flex items-center gap-2">
+            Restaurant Partner? <span className="text-emerald-400">Sign in here</span>
           </button>
         </div>
       )}
