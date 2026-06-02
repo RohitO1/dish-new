@@ -321,7 +321,6 @@ export const AppProvider = ({ children }) => {
       return null;
     }
     try {
-      // Strictly map only snake_case properties that exist in the DB
       const formattedDish = { 
         name: dishData.name,
         price: parseFloat(dishData.price) || 0,
@@ -335,6 +334,8 @@ export const AppProvider = ({ children }) => {
       console.log('Inserting dish:', formattedDish);
       const { data, error } = await supabase.from('dishes').insert([formattedDish]).select();
       if (error) throw error;
+      
+      setDishes(prev => [...prev, data[0]]);
       showNotification('Dish saved successfully!');
       return data[0].id;
     } catch (error) {
@@ -350,7 +351,6 @@ export const AppProvider = ({ children }) => {
       return;
     }
     try {
-      // Only send columns that actually exist in the DB schema
       const dbUpdate = {};
       if (updates.name !== undefined) dbUpdate.name = updates.name;
       if (updates.price !== undefined) dbUpdate.price = parseFloat(updates.price) || 0;
@@ -365,8 +365,12 @@ export const AppProvider = ({ children }) => {
       if (updates.rest_id !== undefined) dbUpdate.rest_id = updates.rest_id;
 
       console.log('Updating dish:', dishId, dbUpdate);
-      const { error } = await supabase.from('dishes').update(dbUpdate).eq('id', dishId);
+      const { data, error } = await supabase.from('dishes').update(dbUpdate).eq('id', dishId).select();
       if (error) throw error;
+      
+      if (data && data[0]) {
+        setDishes(prev => prev.map(d => d.id === dishId ? data[0] : d));
+      }
       showNotification('Dish updated successfully.');
     } catch (error) {
       console.error('Update dish error:', error);

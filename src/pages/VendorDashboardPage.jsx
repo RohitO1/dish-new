@@ -108,7 +108,12 @@ export default function VendorDashboardPage() {
     if (glbResult instanceof File) {
       setScanState('uploading');
       setScanStageLabel('Saving model to Supabase Cloud...');
-      finalUrl = await uploadGlbFile(glbResult, true);
+      finalUrl = await uploadGlbFile(glbResult, false); // Do not hide state!
+      
+      if (!finalUrl) {
+        // Upload failed (scanState already set to error by uploadGlbFile)
+        return;
+      }
     }
 
     setScanState('complete');
