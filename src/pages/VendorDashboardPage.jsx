@@ -126,6 +126,13 @@ export default function VendorDashboardPage() {
       setProgress(0);
       setScanStageLabel('');
       console.error('[AI 3D]', err);
+      // Show a helpful error message
+      const errMsg = err?.message || '';
+      if (errMsg.includes('Failed to fetch') || errMsg.includes('NetworkError') || errMsg.includes('CORS')) {
+        alert('3D generation failed: Network/CORS error. The Tripo API cannot be called directly from the browser. Please set up a Vercel proxy function (see console for details).');
+      } else {
+        alert(`3D generation failed: ${errMsg || 'Unknown error. Check browser console.'}`);
+      }
     }
   }, []);
 
