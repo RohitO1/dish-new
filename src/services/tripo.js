@@ -34,15 +34,21 @@ async function tripoFetch(path, options = {}) {
 
 // ─── Shared helpers ───────────────────────────────────────────────
 
-/**
- * Upload a single image File to Tripo and return its file_token.
- */
 async function uploadFileToTripo(file) {
-  const form = new FormData();
-  form.append('file', file, file.name || 'upload.jpg');
-  form.append('type', file.type?.startsWith('video') ? 'video' : 'image');
+  // Convert to ArrayBuffer to bypass Vercel Edge FormData corruption
+  const buffer = await file.arrayBuffer();
+  const fileType = file.type?.startsWith('video') ? 'video' : 'image';
+  const fileName = file.name || 'upload.jpg';
 
-  const res = await tripoFetch('upload', { method: 'POST', body: form });
+  const res = await tripoFetch('upload', { 
+    method: 'POST', 
+    headers: {
+      'Content-Type': 'application/octet-stream',
+      'X-File-Name': fileName,
+      'X-File-Type': fileType
+    },
+    body: buffer 
+  });
   if (!res.ok) {
     const errText = await res.text().catch(() => res.status);
     throw new Error(`Tripo upload failed (${res.status}): ${errText}`);

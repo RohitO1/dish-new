@@ -7,59 +7,69 @@
 
 export const config = { runtime: 'edge' };
 
-const TRIPO_BASE = 'https://api.tripo3d.ai/v2/openapi';
-const API_KEY = process.env.VITE_TRIPO_API_KEY || '';
+const corsHeaders = () => ({
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-File-Name, X-File-Type',
+});
 
 export default async function handler(req) {
-  // Only allow POST and GET
-  if (req.method !== 'POST' && req.method !== 'GET') {
-    return new Response(JSON.stringify({ error: 'Method not allowed' }), {
-      status: 405,
-      headers: corsHeaders()
-    });
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { status: 200, headers: corsHeaders() });
   }
 
-  // Get the target path from query: e.g. /api/tripo-proxy?path=task/abc123
   const url = new URL(req.url);
-  const tripoPath = url.searchParams.get('path') || '';
-  const tripoUrl = `${TRIPO_BASE}/${tripoPath}`;
-
-  if (!API_KEY) {
-    return new Response(JSON.stringify({ error: 'VITE_TRIPO_API_KEY not configured on server' }), {
-      status: 500,
-      headers: corsHeaders()
-    });
+  const path = url.searchParams.get('path');
+  if (!path) {
+    return new Response(JSON.stringify({ error: 'Missing path parameter' }), { status: 400 });
   }
+
+  const API_KEY = process.env.VITE_TRIPO_API_KEY;
+  const tripoUrl = `https://api.tripo3d.ai/v2/openapi/${path}`;
 
   try {
-    const isFormData = req.headers.get('content-type')?.includes('multipart');
-
-    // Buffer the ENTIRE request body into an ArrayBuffer
-    // This is safe because extracted image frames are < 500KB.
-    // Doing this guarantees we pass EXACTLY the same boundary bytes the browser created,
-    // and prevents Vercel Edge from using Transfer-Encoding: chunked (which Tripo3D rejects).
-    const reqBuffer = req.method === 'POST' ? await req.arrayBuffer() : undefined;
-
+    let fetchBody;
     let fetchHeaders = new Headers();
-    for (const [key, value] of req.headers.entries()) {
-      // Drop headers that should not be forwarded
-      if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
-        fetchHeaders.set(key, value);
-      }
-    }
-    
-    // Add API Key
     fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
-    
-    // Explicitly set Content-Length to force a non-chunked, fixed-length payload
-    if (reqBuffer) {
-      fetchHeaders.set('Content-Length', reqBuffer.byteLength.toString());
+
+    if (req.method === 'POST') {
+      const contentType = req.headers.get('content-type') || '';
+      
+      if (contentType.includes('application/octet-stream')) {
+        // Construct FormData internally to avoid pass-through corruption!
+        // Edge fetch can send FormData perfectly, it just can't forward an existing stream perfectly.
+        const reqBuffer = await req.arrayBuffer();
+        const blob = new Blob([reqBuffer], { type: 'application/octet-stream' });
+        
+        const fileName = req.headers.get('x-file-name') || 'upload.jpg';
+        const fileType = req.headers.get('x-file-type') || 'image';
+        
+        const form = new FormData();
+        form.append('file', blob, fileName);
+        form.append('type', fileType);
+        
+        fetchBody = form;
+      } else {
+        // Buffer normal JSON requests
+        fetchBody = await req.arrayBuffer();
+        for (const [key, value] of req.headers.entries()) {
+          if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
+            fetchHeaders.set(key, value);
+          }
+        }
+      }
+    } else {
+      for (const [key, value] of req.headers.entries()) {
+        if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
+          fetchHeaders.set(key, value);
+        }
+      }
     }
 
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
       headers: fetchHeaders,
-      body: reqBuffer, // Forward raw bytes
+      body: fetchBody,
     });
 
     const data = await upstreamRes.arrayBuffer();
@@ -72,19 +82,10 @@ export default async function handler(req) {
       }
     });
   } catch (err) {
-    console.error('Tripo proxy error:', err);
-    return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: corsHeaders()
+    console.error('Tripo Proxy Error:', err);
+    return new Response(JSON.stringify({ error: err.message }), { 
+      status: 500, 
+      headers: corsHeaders() 
     });
   }
-}
-
-function corsHeaders() {
-  return {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json',
-  };
 }
