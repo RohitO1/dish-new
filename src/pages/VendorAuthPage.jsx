@@ -9,8 +9,6 @@ export default function VendorAuthPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { setSupabaseUser, setIsInitializing } = useAppContext();
-
   const handleGoogleLogin = async () => {
     setLoading(true);
     setError('');
@@ -24,12 +22,6 @@ export default function VendorAuthPage() {
       setError(err.message || 'Failed to connect to Google.');
       setLoading(false);
     }
-  };
-
-  const handleDevBypass = () => {
-    setSupabaseUser({ id: 'DEV_BYPASS', email: 'ai_bot@dev.local', role: 'vendor' });
-    setIsInitializing(false);
-    navigate('/vendor-onboard', { replace: true });
   };
 
   return (
@@ -85,14 +77,6 @@ export default function VendorAuthPage() {
               </>
             )}
           </motion.button>
-          
-          <button 
-            type="button"
-            onClick={handleDevBypass}
-            className="w-full mt-4 bg-emerald-600/20 text-emerald-400 border border-emerald-600/50 font-bold py-3 rounded-xl hover:bg-emerald-600/40 transition-colors"
-          >
-            Dev Bypass (AI Auto-Test)
-          </button>
 
         </motion.div>
 
