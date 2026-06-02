@@ -34,20 +34,29 @@ export default async function handler(req) {
   try {
     const isFormData = req.headers.get('content-type')?.includes('multipart');
 
-    // Clone headers to preserve Content-Type, Content-Length, boundary, etc.
-    const headers = new Headers();
-    for (const [key, value] of req.headers.entries()) {
-      if (!['host', 'connection', 'origin', 'referer'].includes(key.toLowerCase())) {
-        headers.set(key, value);
+    let fetchBody = req.method === 'POST' ? req.body : undefined;
+    let fetchHeaders = new Headers();
+
+    if (isFormData && req.method === 'POST') {
+      // Natively parse and reconstruct the form data. 
+      // Fetch will automatically generate the correct Content-Type with a valid boundary.
+      fetchBody = await req.formData();
+      fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
+    } else {
+      // Normal JSON / other requests proxy
+      for (const [key, value] of req.headers.entries()) {
+        if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
+          fetchHeaders.set(key, value);
+        }
       }
+      fetchHeaders.set('Authorization', `Bearer ${API_KEY}`);
     }
-    headers.set('Authorization', `Bearer ${API_KEY}`);
 
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
-      headers,
-      body: req.method === 'POST' ? req.body : undefined,
-      duplex: 'half',
+      headers: fetchHeaders,
+      body: fetchBody,
+      duplex: fetchBody && !(fetchBody instanceof FormData) ? 'half' : undefined,
     });
 
     const data = await upstreamRes.arrayBuffer();
