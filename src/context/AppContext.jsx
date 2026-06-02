@@ -372,9 +372,11 @@ export const AppProvider = ({ children }) => {
         setDishes(prev => prev.map(d => d.id === dishId ? data[0] : d));
       }
       showNotification('Dish updated successfully.');
+      return true;
     } catch (error) {
       console.error('Update dish error:', error);
       showNotification(`Failed to update dish: ${error.message}`);
+      return null;
     }
   };
 

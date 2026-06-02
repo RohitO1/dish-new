@@ -529,14 +529,18 @@ export default function VendorDashboardPage() {
 
               <form onSubmit={async (e) => {
                 e.preventDefault();
+                let success;
                 if (editingDish.id) {
-                  await updateDish(editingDish.id, editingDish);
+                  success = await updateDish(editingDish.id, editingDish) !== null;
                 } else {
-                  await addDish({ ...editingDish, restId: activeRestId });
+                  success = await addDish({ ...editingDish, restId: activeRestId }) !== null;
                 }
-                setEditingDish(null);
-                setScanState('idle');
-                setProgress(0);
+                
+                if (success) {
+                  setEditingDish(null);
+                  setScanState('idle');
+                  setProgress(0);
+                }
               }} className={`space-y-6 bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm transition-opacity ${scanState !== 'idle' && scanState !== 'complete' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 
                 <div className="grid grid-cols-2 gap-4">
@@ -661,7 +665,10 @@ export default function VendorDashboardPage() {
                   </div>
                 </div>
 
-                <button type="submit" className="w-full bg-blue-600 text-white font-black py-4 rounded-xl mt-6 shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50 transition-all">
+                <button 
+                  type="submit" 
+                  disabled={scanState !== 'idle' && scanState !== 'complete'}
+                  className={`w-full bg-blue-600 text-white font-black py-4 rounded-xl mt-6 transition-all ${scanState !== 'idle' && scanState !== 'complete' ? 'opacity-50 cursor-not-allowed' : 'shadow-lg shadow-blue-600/30 hover:shadow-blue-600/50'}`}>
                   {editingDish.id ? 'Save Changes' : 'Publish Dish'}
                 </button>
               </form>
