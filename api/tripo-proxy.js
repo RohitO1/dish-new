@@ -73,13 +73,15 @@ export default async function handler(req, res) {
         fetchHeaders['Content-Length'] = bodyBytes.length.toString();
         fetchBody = bodyBytes;
       } else {
-        // Buffer normal JSON requests
+        // Buffer normal requests (including multipart FormData from browser)
         fetchBody = reqBuffer;
         for (const [key, value] of Object.entries(req.headers)) {
-          if (!['host', 'connection', 'origin', 'referer', 'content-length'].includes(key.toLowerCase())) {
+          if (!['host', 'connection', 'origin', 'referer'].includes(key.toLowerCase())) {
             fetchHeaders[key] = value;
           }
         }
+        // Explicitly force Content-Length to prevent Node fetch from using Transfer-Encoding: chunked
+        fetchHeaders['Content-Length'] = reqBuffer.length.toString();
       }
     } else {
       for (const [key, value] of Object.entries(req.headers)) {
