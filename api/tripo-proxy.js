@@ -74,6 +74,7 @@ export default async function handler(req, res) {
       }
     }
 
+    // Use native fetch to send exactly the bytes we constructed
     const upstreamRes = await fetch(tripoUrl, {
       method: req.method,
       headers: fetchHeaders,
@@ -83,12 +84,20 @@ export default async function handler(req, res) {
     // Step 6: Log and return the EXACT Tripo error body
     if (!upstreamRes.ok) {
       const errorText = await upstreamRes.text().catch(() => 'Failed to read Tripo error body');
-      console.error(`[PROXY] Tripo Error (${upstreamRes.status}):`, errorText);
       res.status(upstreamRes.status);
       for (const [key, value] of Object.entries(corsHeaders)) {
         res.setHeader(key, value);
       }
-      return res.json({ proxy_error: `Tripo responded with ${upstreamRes.status}`, tripo_message: errorText });
+      return res.json({ 
+        proxy_error: `Tripo responded with ${upstreamRes.status}`, 
+        tripo_message: errorText,
+        diagnostics: {
+          originalContentType: req.headers['content-type'],
+          forwardedHeaders: fetchHeaders,
+          bufferSize: fetchBody ? fetchBody.length : 0,
+          tripoUrl: tripoUrl
+        }
+      });
     }
 
     const data = await upstreamRes.arrayBuffer();
