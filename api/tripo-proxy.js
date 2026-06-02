@@ -25,7 +25,7 @@ export default async function handler(req) {
   }
 
   const API_KEY = process.env.VITE_TRIPO_API_KEY;
-  const tripoUrl = `https://api.tripo3d.ai/v2/openapi/${path}`;
+  const tripoUrl = path === 'httpbin' ? 'https://httpbin.org/post' : `https://api.tripo3d.ai/v2/openapi/${path}`;
 
   try {
     let fetchBody;
