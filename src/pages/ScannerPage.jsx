@@ -40,18 +40,20 @@ export default function ScannerPage() {
               const restId = url.searchParams.get('restId');
               if (restId) {
                 if (controlsRef.current) controlsRef.current.stop();
-                const rest = restaurants.find(r => r.id === restId);
-                setScannedRest({ id: restId, name: rest?.name || 'Restaurant' });
                 setScanned(true);
+                setActiveRestId(restId);
+                showNotification('Table Verified! Loading Menu...');
+                navigate('/menu', { replace: true });
               } else {
                 showNotification('Invalid Table QR Code');
               }
             } catch (e) {
               if (text.startsWith('rest-')) {
                 if (controlsRef.current) controlsRef.current.stop();
-                const rest = restaurants.find(r => r.id === text);
-                setScannedRest({ id: text, name: rest?.name || 'Restaurant' });
                 setScanned(true);
+                setActiveRestId(text);
+                showNotification('Table Verified! Loading Menu...');
+                navigate('/menu', { replace: true });
               }
             }
           }
@@ -64,7 +66,7 @@ export default function ScannerPage() {
     };
     startScan();
     return () => { if (controlsRef.current) controlsRef.current.stop(); };
-  }, [scanned, navigate, setActiveRestId, showNotification, restaurants]);
+  }, [scanned, navigate, setActiveRestId, showNotification]);
 
   const handleEnterMenu = () => {
     if (scannedRest) {
@@ -77,8 +79,10 @@ export default function ScannerPage() {
     const rest = restaurants[0];
     if (rest) {
       if (controlsRef.current) controlsRef.current.stop();
-      setScannedRest({ id: rest.id, name: rest.name });
       setScanned(true);
+      setActiveRestId(rest.id);
+      showNotification('Table Verified! Loading Menu...');
+      navigate('/menu', { replace: true });
     }
   };
 

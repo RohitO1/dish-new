@@ -41,8 +41,14 @@ export const AppProvider = ({ children }) => {
       return null;
     }
   }); 
-  const [activeRestId, setActiveRestId] = useState(null);
+  const [activeRestId, setActiveRestIdState] = useState(() => sessionStorage.getItem('3dish_active_rest') || null);
   const [activeDishId, setActiveDishId] = useState(null);
+
+  const setActiveRestId = (id) => {
+    if (id) sessionStorage.setItem('3dish_active_rest', id);
+    else sessionStorage.removeItem('3dish_active_rest');
+    setActiveRestIdState(id);
+  };
   
   // Persist user state to localStorage
   useEffect(() => {
