@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { QRCodeSVG } from 'qrcode.react';
 import { useAppContext } from '../context/AppContext';
 import { supabase } from '../services/supabase';
-import { generateModelFromImage, generateModelFromVideo } from '../services/tripo';
+import { generateModelFromImage, generateModelFromVideo } from '../services/kiri';
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
@@ -89,18 +89,13 @@ export default function VendorDashboardPage() {
   // Allergens state (part of editingDish)
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy'];
 
-  // Stage labels for Meshy AI 3D generation pipeline
+  // Stage labels for KIRI Engine 3D generation pipeline
   const STAGE_LABELS = {
-    extracting:  'Extracting best frame from video...',
-    compressing: 'Compressing image for upload...',
-    compressed:  'Image ready for 3D generation...',
-    queued:      'Connecting to Meshy AI server...',
-    uploading:   'Uploading image to Meshy AI...',
-    running:     'Generating 3D model (AI magic — ~1-2 min)...',
-    texturing:   'Applying photorealistic textures...',
-    downloading: 'Downloading 3D model...',
-    selected:    'Best frame selected...',
-    success:     '3D AR Model ready!',
+    uploading:   'Uploading video to KIRI Engine...',
+    queuing:     'Waiting in KIRI processing queue...',
+    processing:  'KIRI Engine building 3D mesh (~2-5 min)...',
+    downloading: 'Downloading 3D model from KIRI...',
+    success:     '3D AR Model Ready! ✨',
   };
 
   // Shared handler that finalizes a GLB result from any pipeline
@@ -128,7 +123,7 @@ export default function VendorDashboardPage() {
       if (!prev) return prev;
       const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
       const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
-      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed in 3D using Meshy AI.";
+      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed in 3D using KIRI Engine AI.";
       return { ...prev, modelUrl: finalUrl, description: autoDesc, macros: autoMacros, tags: autoTags };
     });
   }, []);
