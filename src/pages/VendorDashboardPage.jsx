@@ -89,15 +89,18 @@ export default function VendorDashboardPage() {
   // Allergens state (part of editingDish)
   const ALLERGEN_OPTIONS = ['Gluten', 'Nuts', 'Dairy', 'Eggs', 'Shellfish', 'Soy'];
 
-  // Stage labels for HuggingFace TripoSR pipeline
+  // Stage labels for Meshy AI 3D generation pipeline
   const STAGE_LABELS = {
-    extracting: 'Extracting best frame from video...',
-    queued:     'Connecting to AI server...',
-    uploading:  'Uploading image to TripoSR...',
-    running:    'Generating 3D model (AI magic!)...',
-    texturing:  'Applying photorealistic textures...',
-    downloading:'Downloading model to cloud...',
-    success:    '3D AR Model ready!',
+    extracting:  'Extracting best frame from video...',
+    compressing: 'Compressing image for upload...',
+    compressed:  'Image ready for 3D generation...',
+    queued:      'Connecting to Meshy AI server...',
+    uploading:   'Uploading image to Meshy AI...',
+    running:     'Generating 3D model (AI magic — ~1-2 min)...',
+    texturing:   'Applying photorealistic textures...',
+    downloading: 'Downloading 3D model...',
+    selected:    'Best frame selected...',
+    success:     '3D AR Model ready!',
   };
 
   // Shared handler that finalizes a GLB result from any pipeline
@@ -125,7 +128,7 @@ export default function VendorDashboardPage() {
       if (!prev) return prev;
       const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
       const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
-      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed in 3D using Hugging Face TripoSR AI.";
+      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed in 3D using Meshy AI.";
       return { ...prev, modelUrl: finalUrl, description: autoDesc, macros: autoMacros, tags: autoTags };
     });
   }, []);

@@ -1,88 +1,49 @@
 /**
- * Vercel Serverless Function — Hugging Face TripoSR Proxy
- * Replaces all Tripo3D API calls. Routes POST requests to the Hugging Face
- * Inference API to avoid browser CORS restrictions.
+ * Vercel Serverless Function — 3D Generation Status/Health Check
  *
- * Env var required (set in Vercel dashboard):
- *   VITE_HF_TOKEN  — your free Hugging Face token
- *                    https://huggingface.co/settings/tokens
+ * NOTE: The primary 3D generation now happens client-side via @gradio/client
+ * calling the free stabilityai/TripoSR HuggingFace Space directly.
+ * No API key is required.
+ *
+ * This endpoint is kept as a health check so the frontend can verify
+ * the 3D generation system is configured.
  */
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
-export const config = {
-  api: {
-    bodyParser: false,
-    responseLimit: '15mb',
-  },
-};
-
 export default async function handler(req, res) {
-  // CORS preflight
   if (req.method === 'OPTIONS') {
-    res.status(200);
     for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    return res.end();
+    return res.status(200).end();
   }
 
-  if (req.method !== 'POST') {
-    res.status(405);
-    for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    return res.json({ error: 'Method Not Allowed' });
-  }
+  for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
 
-  const HF_TOKEN = process.env.VITE_HF_TOKEN;
-  if (!HF_TOKEN) {
-    res.status(500);
-    for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    return res.json({ error: 'VITE_HF_TOKEN is not configured. Add it to your Vercel environment variables.' });
-  }
-
-  try {
-    // Collect request body (raw binary)
-    const chunks = [];
-    for await (const chunk of req) chunks.push(chunk);
-    const bodyBuffer = Buffer.concat(chunks);
-
-    // Forward to Hugging Face TripoSR
-    const hfRes = await fetch(
-      'https://api-inference.huggingface.co/models/stabilityai/TripoSR',
-      {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${HF_TOKEN}`,
-          'Content-Type': req.headers['content-type'] || 'image/jpeg',
-          'Content-Length': bodyBuffer.length.toString(),
-        },
-        body: bodyBuffer,
-      }
-    );
-
-    if (!hfRes.ok) {
-      const errText = await hfRes.text().catch(() => 'Unreadable error from Hugging Face');
-      console.error('[HF TripoSR] API error:', hfRes.status, errText);
-      res.status(hfRes.status);
-      for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-      return res.json({ error: `Hugging Face TripoSR responded with ${hfRes.status}: ${errText}` });
+  // Health check — verify the TripoSR Space is reachable
+  if (req.method === 'GET') {
+    try {
+      const checkRes = await fetch('https://stabilityai-triposr.hf.space/info', {
+        signal: AbortSignal.timeout(5000),
+      });
+      return res.status(200).json({
+        status: 'ok',
+        provider: 'HuggingFace TripoSR Space (free)',
+        space_status: checkRes.ok ? 'running' : 'unavailable',
+        message: '3D generation runs client-side via @gradio/client — no API key needed.',
+      });
+    } catch (err) {
+      return res.status(200).json({
+        status: 'ok',
+        provider: 'HuggingFace TripoSR Space (free)',
+        space_status: 'unknown',
+        message: '3D generation runs client-side via @gradio/client — no API key needed.',
+      });
     }
-
-    // Stream the GLB binary back to the browser
-    const arrayBuffer = await hfRes.arrayBuffer();
-    const buffer = Buffer.from(arrayBuffer);
-
-    res.status(200);
-    for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    res.setHeader('Content-Type', hfRes.headers.get('content-type') || 'model/gltf-binary');
-    res.end(buffer);
-
-  } catch (err) {
-    console.error('[HF TripoSR] Proxy exception:', err);
-    res.status(500);
-    for (const [k, v] of Object.entries(corsHeaders)) res.setHeader(k, v);
-    res.json({ error: err.message });
   }
+
+  return res.status(405).json({ error: 'Method not allowed. 3D generation now runs client-side.' });
 }
