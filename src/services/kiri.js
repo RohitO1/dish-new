@@ -214,12 +214,8 @@ export async function generateModelFromVideo(videoFile, onProgress = () => {}) {
     return blobUrl;
 
   } catch (err) {
-    console.warn('[KIRI] Generation failed, using demo model:', err.message);
-    // Graceful fallback — demo model so the UI flow completes
-    onProgress(90, 'downloading');
-    await new Promise(r => setTimeout(r, 400));
-    onProgress(100, 'success');
-    return DEMO_MODEL;
+    console.warn('[KIRI] Generation failed:', err.message);
+    throw err;
   }
 }
 

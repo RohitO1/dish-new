@@ -30,6 +30,7 @@ export const config = {
   api: {
     bodyParser: false,          // We stream the raw multipart body straight through
     responseLimit: false,
+    sizeLimit: '200mb',         // Important for video uploads
   },
   maxDuration: 120,             // 2 min — enough for upload + KIRI to accept
 };
