@@ -14,6 +14,13 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+export const config = {
+  api: {
+    bodyParser: false,
+    responseLimit: '15mb',
+  },
+};
+
 export default async function handler(req, res) {
   // CORS preflight
   if (req.method === 'OPTIONS') {
@@ -36,10 +43,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Collect request body
+    // Collect request body (raw binary)
     const chunks = [];
     for await (const chunk of req) chunks.push(chunk);
-    const body = Buffer.concat(chunks).toString('utf-8');
+    const bodyBuffer = Buffer.concat(chunks);
 
     // Forward to Hugging Face TripoSR
     const hfRes = await fetch(
@@ -48,9 +55,10 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${HF_TOKEN}`,
-          'Content-Type': 'application/json',
+          'Content-Type': req.headers['content-type'] || 'image/jpeg',
+          'Content-Length': bodyBuffer.length.toString(),
         },
-        body,
+        body: bodyBuffer,
       }
     );
 

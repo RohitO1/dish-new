@@ -301,17 +301,15 @@ async function generateGlbFromHuggingFace(imageFile, onProgress) {
   // Compress image before upload for faster transfer
   const compressed = await compressImage(imageFile, 512, 0.88);
 
-  onProgress(72, 'uploading');
-  const imageBase64 = await fileToBase64(compressed);
-
-  onProgress(78, 'queued');
+  onProgress(75, 'queued');
 
   // Use proxy in prod, direct in dev
   const endpoint = IS_PROD
     ? '/api/tripo/generate'
     : 'https://api-inference.huggingface.co/models/stabilityai/TripoSR';
 
-  const headers = { 'Content-Type': 'application/json' };
+  // TripoSR (like most HF image models) accepts raw binary image data
+  const headers = { 'Content-Type': 'image/jpeg' };
   if (!IS_PROD && HF_TOKEN) {
     headers['Authorization'] = `Bearer ${HF_TOKEN}`;
   }
@@ -321,7 +319,7 @@ async function generateGlbFromHuggingFace(imageFile, onProgress) {
   const res = await fetch(endpoint, {
     method: 'POST',
     headers,
-    body: JSON.stringify({ inputs: imageBase64 }),
+    body: compressed, // Send the binary File object directly
   });
 
   if (!res.ok) {

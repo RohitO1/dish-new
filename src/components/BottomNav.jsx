@@ -19,13 +19,7 @@ export default function BottomNav() {
 
   return (
     <div
-      className="fixed bottom-0 w-full flex justify-around pt-3 pb-6 z-40"
-      style={{
-        background: 'rgba(11, 12, 16, 0.92)',
-        backdropFilter: 'blur(24px)',
-        borderTop: '1px solid rgba(212,175,55,0.1)',
-        boxShadow: '0 -8px 40px rgba(0,0,0,0.6), 0 -1px 0 rgba(212,175,55,0.05)'
-      }}
+      className="fixed bottom-0 w-full flex justify-around pt-3 pb-6 z-40 bg-white/95 dark:bg-obsidian-900/95 backdrop-blur-xl border-t border-neutral-200 dark:border-champagne-500/10 shadow-[0_-8px_40px_rgba(0,0,0,0.05)] dark:shadow-[0_-8px_40px_rgba(0,0,0,0.6)]"
     >
       {navItems.map((item) => (
         <NavLink key={item.to} to={item.to}
@@ -36,15 +30,13 @@ export default function BottomNav() {
               <motion.div whileTap={{ scale: 0.8 }} className="relative">
                 {isActive && (
                   <motion.div layoutId="nav-glow"
-                    className="absolute -inset-2.5 rounded-2xl"
-                    style={{ background: 'rgba(212,175,55,0.12)', border: '1px solid rgba(212,175,55,0.2)' }}
+                    className="absolute -inset-2.5 rounded-2xl bg-champagne-500/10 border border-champagne-500/20"
                     transition={{ type: 'spring', bounce: 0.25, duration: 0.4 }}
                   />
                 )}
                 <item.icon
                   size={22}
-                  className="relative z-10 transition-colors"
-                  style={{ color: isActive ? '#D4AF37' : '#4B5563' }}
+                  className={`relative z-10 transition-colors ${isActive ? 'text-champagne-600 dark:text-champagne-500' : 'text-neutral-400 dark:text-neutral-500'}`}
                 />
                 {item.badge && (
                   <span className="absolute -top-1.5 -right-2 min-w-[16px] h-4 flex items-center justify-center rounded-full font-sans font-black text-[9px] px-1"
@@ -54,8 +46,7 @@ export default function BottomNav() {
                 )}
               </motion.div>
               <span
-                className="text-[10px] mt-1.5 font-sans font-semibold tracking-wide transition-colors"
-                style={{ color: isActive ? '#D4AF37' : '#4B5563' }}
+                className={`text-[10px] mt-1.5 font-sans font-semibold tracking-wide transition-colors ${isActive ? 'text-champagne-600 dark:text-champagne-500' : 'text-neutral-500 dark:text-neutral-500'}`}
               >
                 {item.label}
               </span>

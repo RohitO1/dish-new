@@ -307,8 +307,7 @@ export default function VendorDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex shrink-0 overflow-x-auto no-scrollbar z-0"
-        style={{ background: 'rgba(11,12,16,0.95)', borderBottom: '1px solid rgba(212,175,55,0.1)' }}>
+      <div className="flex shrink-0 overflow-x-auto no-scrollbar z-0 bg-neutral-100 dark:bg-obsidian-900 border-b border-neutral-200 dark:border-champagne-500/10">
         {[
           { key: 'orders',    icon: ListOrdered, label: t('vendor.kitchenDisplay') },
           { key: 'analytics', icon: TrendingUp,   label: t('vendor.analytics') },
@@ -328,37 +327,37 @@ export default function VendorDashboardPage() {
         ))}
       </div>
 
-      <div className="flex-1 overflow-hidden relative" style={{ background: '#0F1014' }}>
+      <div className="flex-1 overflow-hidden relative bg-neutral-50 dark:bg-neutral-950">
         <AnimatePresence mode="wait">
           {vendorTab === 'orders' && (
             <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-x-auto p-6 flex gap-6 items-start">
               
               {/* Pending Verification Lane (special) */}
-              <div className="w-80 shrink-0 bg-white dark:bg-obsidian-800 rounded-2xl border border-amber-200 dark:border-amber-900 shadow-sm flex flex-col max-h-full overflow-hidden">
-                <div className="p-4 bg-amber-50 border-b border-amber-200 font-black flex justify-between items-center">
+              <div className="w-80 shrink-0 bg-white dark:bg-obsidian-800 rounded-2xl border border-amber-200 dark:border-amber-900/60 shadow-sm flex flex-col max-h-full overflow-hidden">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/30 border-b border-amber-200 dark:border-amber-800/50 font-black flex justify-between items-center text-neutral-900 dark:text-pearl">
                   <span>⏳ Verify Table</span>
-                  <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs">{pendingVerification.length}</span>
+                  <span className="bg-amber-200 dark:bg-amber-900 text-amber-800 dark:text-amber-300 px-3 py-1 rounded-full text-xs">{pendingVerification.length}</span>
                 </div>
-                <div className="p-4 space-y-4 overflow-y-auto bg-amber-50/20 flex-1">
+                <div className="p-4 space-y-4 overflow-y-auto bg-amber-50/20 dark:bg-obsidian-900/30 flex-1">
                   <AnimatePresence>
                     {pendingVerification.map(o => (
                       <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className="bg-white dark:bg-obsidian-800 border border-amber-200 rounded-xl p-4 shadow-sm">
                         <div className="flex justify-between mb-3">
-                          <span className="font-mono font-black text-sm text-neutral-800">{getOrderNumber(o)}</span>
-                          <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">{o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}</span>
+                          <span className="font-mono font-black text-sm text-neutral-800 dark:text-pearl">{getOrderNumber(o)}</span>
+                          <span className="text-[10px] font-black text-amber-700 dark:text-amber-400 bg-amber-100 dark:bg-amber-900/50 px-2 py-0.5 rounded-md">{o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}</span>
                         </div>
-                        <ul className="text-sm font-bold mb-4 bg-neutral-50 p-3 rounded-lg border border-neutral-100 space-y-1 text-neutral-700">
+                        <ul className="text-sm font-bold mb-4 bg-neutral-50 dark:bg-obsidian-900/60 p-3 rounded-lg border border-neutral-100 dark:border-neutral-700/50 space-y-1 text-neutral-700 dark:text-neutral-300">
                           {o.items.map((item, i) => <li key={i}>1x {item.name}</li>)}
                         </ul>
                         {o.verificationCode && (
-                          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-4 text-center">
-                            <p className="text-[10px] font-bold text-amber-600 uppercase tracking-widest mb-1">Verification Code</p>
-                            <p className="text-3xl font-black text-amber-700 tracking-[0.3em] font-mono">{o.verificationCode}</p>
-                            <p className="text-[10px] text-neutral-500 mt-1">Ask the customer for this code</p>
+                          <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-800/50 rounded-xl p-4 mb-4 text-center">
+                            <p className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-widest mb-1">Verification Code</p>
+                            <p className="text-3xl font-black text-amber-700 dark:text-amber-300 tracking-[0.3em] font-mono">{o.verificationCode}</p>
+                            <p className="text-[10px] text-neutral-500 dark:text-neutral-400 mt-1">Ask the customer for this code</p>
                           </div>
                         )}
                         {o.contactName && (
-                          <div className="text-xs text-neutral-500 mb-3 bg-neutral-50 p-2 rounded-lg border border-neutral-100">
+                          <div className="text-xs text-neutral-500 dark:text-neutral-400 mb-3 bg-neutral-50 dark:bg-obsidian-900/60 p-2 rounded-lg border border-neutral-100 dark:border-neutral-700/50">
                             📞 {o.contactName} • {o.contactPhone}
                           </div>
                         )}
@@ -374,28 +373,28 @@ export default function VendorDashboardPage() {
 
               {/* Standard Lanes */}
               {[
-                { title: t('vendor.cookQueue'), data: pending, color: 'blue', bg: 'bg-white', headerBg: 'bg-blue-50', border: 'border-blue-200', action: 'Preparing', actionLabel: t('vendor.startCooking'), actionColor: 'bg-blue-600 text-white' },
-                { title: t('vendor.preparing'), data: prep, color: 'orange', bg: 'bg-white', headerBg: 'bg-orange-50', border: 'border-orange-200', action: 'Ready', actionLabel: t('vendor.markReady'), actionColor: 'bg-orange-500 text-white' },
-                { title: t('vendor.ready'), data: ready, color: 'emerald', bg: 'bg-white', headerBg: 'bg-emerald-50', border: 'border-emerald-200', action: 'Completed', actionLabel: t('vendor.completeOrder'), actionColor: 'bg-emerald-600 text-white' }
+                { title: t('vendor.cookQueue'), data: pending, color: 'blue', bg: 'bg-white dark:bg-obsidian-800', headerBg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-900/50', action: 'Preparing', actionLabel: t('vendor.startCooking'), actionColor: 'bg-blue-600 text-white' },
+                { title: t('vendor.preparing'), data: prep, color: 'orange', bg: 'bg-white dark:bg-obsidian-800', headerBg: 'bg-orange-50 dark:bg-orange-900/20', border: 'border-orange-200 dark:border-orange-900/50', action: 'Ready', actionLabel: t('vendor.markReady'), actionColor: 'bg-orange-500 text-white' },
+                { title: t('vendor.ready'), data: ready, color: 'emerald', bg: 'bg-white dark:bg-obsidian-800', headerBg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-900/50', action: 'Completed', actionLabel: t('vendor.completeOrder'), actionColor: 'bg-emerald-600 text-white' }
               ].map(lane => (
                 <div key={lane.title} className={`w-80 shrink-0 ${lane.bg} rounded-2xl border ${lane.border} shadow-sm flex flex-col max-h-full overflow-hidden`}>
-                  <div className={`p-4 ${lane.headerBg} border-b ${lane.border} font-black flex justify-between items-center`}>
+                  <div className={`p-4 ${lane.headerBg} border-b ${lane.border} font-black flex justify-between items-center text-neutral-900 dark:text-pearl`}>
                     <span>{lane.title}</span>
-                    <span className={`bg-${lane.color}-200 text-${lane.color}-800 px-3 py-1 rounded-full text-xs`}>{lane.data.length}</span>
+                    <span className={`bg-${lane.color}-200 dark:bg-${lane.color}-900/60 text-${lane.color}-800 dark:text-${lane.color}-300 px-3 py-1 rounded-full text-xs`}>{lane.data.length}</span>
                   </div>
-                  <div className="p-4 space-y-4 overflow-y-auto bg-neutral-50/50 flex-1">
+                  <div className="p-4 space-y-4 overflow-y-auto bg-neutral-50/50 dark:bg-obsidian-900/30 flex-1">
                     <AnimatePresence>
                       {lane.data.map(o => (
-                        <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className={`bg-white border rounded-xl p-4 shadow-sm ${o.orderType === 'prepaid' ? 'border-purple-200 bg-purple-50/10' : 'border-neutral-200'}`}>
+                        <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className={`bg-white dark:bg-obsidian-800 border rounded-xl p-4 shadow-sm ${o.orderType === 'prepaid' ? 'border-purple-200 dark:border-purple-900/50 bg-purple-50/10 dark:bg-purple-900/10' : 'border-neutral-200 dark:border-neutral-700/50'}`}>
                           <div className="flex justify-between mb-3">
-                             <span className="font-mono font-black text-sm text-neutral-800">{getOrderNumber(o)}</span>
-                             {o.orderType === 'prepaid' && <span className="text-[10px] font-black text-purple-700 bg-purple-100 px-2 py-0.5 rounded-md">DUE: {o.scheduledTime}</span>}
+                             <span className="font-mono font-black text-sm text-neutral-800 dark:text-pearl">{getOrderNumber(o)}</span>
+                             {o.orderType === 'prepaid' && <span className="text-[10px] font-black text-purple-700 dark:text-purple-400 bg-purple-100 dark:bg-purple-900/50 px-2 py-0.5 rounded-md">DUE: {o.scheduledTime}</span>}
                           </div>
-                          <ul className="text-sm font-bold mb-4 bg-neutral-50 p-3 rounded-lg border border-neutral-100 space-y-1 text-neutral-700">
+                          <ul className="text-sm font-bold mb-4 bg-neutral-50 dark:bg-obsidian-900/60 p-3 rounded-lg border border-neutral-100 dark:border-neutral-700/50 space-y-1 text-neutral-700 dark:text-neutral-300">
                             {o.items.map((item, i) => <li key={i}>1x {item.name}</li>)}
                           </ul>
                           {lane.title === t('vendor.ready') && o.paymentStatus === 'Unpaid' && (
-                             <div className="text-xs mb-3 font-black text-red-500 bg-red-50 p-2 rounded-lg text-center border border-red-100">Collect ${o.total.toFixed(2)} Cash</div>
+                             <div className="text-xs mb-3 font-black text-red-500 bg-red-50 dark:bg-red-900/20 p-2 rounded-lg text-center border border-red-100 dark:border-red-900/40">Collect ${o.total.toFixed(2)} Cash</div>
                           )}
                           <div className="flex gap-2">
                             <button onClick={() => updateOrderStatus(o.id, lane.action)} className={`flex-[2] rounded-lg py-3 text-sm font-black transition-transform hover:scale-[1.02] active:scale-[0.98] shadow-sm ${lane.actionColor || 'bg-neutral-100 text-neutral-800 border border-neutral-200 hover:bg-neutral-200'}`}>
@@ -420,28 +419,28 @@ export default function VendorDashboardPage() {
             <motion.div key="analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute inset-0 overflow-y-auto p-8 max-w-5xl mx-auto w-full">
               <h2 className="text-2xl font-black mb-8">{t('vendor.analytics')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
-                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
-                  <p className="text-sm text-neutral-500 font-bold mb-2 relative z-10">{t('vendor.grossRevenue')}</p>
+                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm relative overflow-hidden group">
+                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-50 dark:bg-emerald-900/20 rounded-full group-hover:scale-110 transition-transform"></div>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 font-bold mb-2 relative z-10">{t('vendor.grossRevenue')}</p>
                   <h3 className="text-5xl font-black text-emerald-600 relative z-10">${todayRevenue.toFixed(2)}</h3>
                 </div>
-                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
-                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full group-hover:scale-110 transition-transform"></div>
-                  <p className="text-sm text-neutral-500 font-bold mb-2 relative z-10">{t('vendor.ordersCompleted')}</p>
+                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm relative overflow-hidden group">
+                  <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 dark:bg-blue-900/20 rounded-full group-hover:scale-110 transition-transform"></div>
+                  <p className="text-sm text-neutral-500 dark:text-neutral-400 font-bold mb-2 relative z-10">{t('vendor.ordersCompleted')}</p>
                   <h3 className="text-5xl font-black text-blue-600 relative z-10">{completed.length}</h3>
                 </div>
               </div>
-              <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm">
-                <h3 className="font-black text-lg border-b border-neutral-100 pb-4 mb-4">{t('vendor.recentTransactions')}</h3>
+              <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-700/50 shadow-sm">
+                <h3 className="font-black text-lg border-b border-neutral-100 dark:border-neutral-700/50 pb-4 mb-4">{t('vendor.recentTransactions')}</h3>
                 <div className="space-y-4">
                   {completed.slice(0, 5).map(o => (
-                    <div key={o.id} className="flex justify-between items-center py-3 border-b border-neutral-50 last:border-0 text-sm">
-                      <span className="text-neutral-500 font-medium bg-neutral-100 px-3 py-1 rounded-lg">{o.timestamp.split('T')[1].slice(0,5)}</span>
-                      <span className="font-mono font-black text-neutral-800">{getOrderNumber(o)}</span>
-                      <span className="font-black text-lg text-neutral-800">${o.total.toFixed(2)}</span>
+                    <div key={o.id} className="flex justify-between items-center py-3 border-b border-neutral-50 dark:border-neutral-700/30 last:border-0 text-sm">
+                      <span className="text-neutral-500 dark:text-neutral-400 font-medium bg-neutral-100 dark:bg-obsidian-900/60 px-3 py-1 rounded-lg">{o.timestamp.split('T')[1].slice(0,5)}</span>
+                      <span className="font-mono font-black text-neutral-800 dark:text-pearl">{getOrderNumber(o)}</span>
+                      <span className="font-black text-lg text-neutral-800 dark:text-pearl">${o.total.toFixed(2)}</span>
                     </div>
                   ))}
-                  {completed.length === 0 && <p className="text-sm font-medium text-neutral-400 text-center py-4">No completed orders today.</p>}
+                  {completed.length === 0 && <p className="text-sm font-medium text-neutral-400 dark:text-neutral-500 text-center py-4">No completed orders today.</p>}
                 </div>
               </div>
             </motion.div>
@@ -457,23 +456,23 @@ export default function VendorDashboardPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {dishes.filter(d => d.restId === activeRestId).map(dish => (
-                  <div key={dish.id} className="bg-white dark:bg-obsidian-800 p-6 rounded-3xl border border-neutral-200 flex flex-col justify-between shadow-sm group hover:shadow-md transition-shadow">
+                  <div key={dish.id} className="bg-white dark:bg-obsidian-800 p-6 rounded-3xl border border-neutral-200 dark:border-neutral-700/50 flex flex-col justify-between shadow-sm group hover:shadow-md transition-shadow">
                     <div className="flex gap-5 items-start mb-6">
-                      <div className="w-20 h-20 bg-neutral-100 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
+                      <div className="w-20 h-20 bg-neutral-100 dark:bg-obsidian-900/60 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 dark:group-hover:bg-blue-900/20 transition-colors">
                         <Box size={32} className="text-neutral-400 group-hover:text-blue-500 transition-colors" />
                       </div>
                       <div>
                         <h3 className="font-black text-lg leading-tight mb-2">{dish.name}</h3>
-                        <p className="text-emerald-600 font-black bg-emerald-50 inline-block px-3 py-1 rounded-lg">${Number(dish.price).toFixed(2)}</p>
+                        <p className="text-emerald-600 font-black bg-emerald-50 dark:bg-emerald-900/20 inline-block px-3 py-1 rounded-lg">${Number(dish.price).toFixed(2)}</p>
                       </div>
                     </div>
-                    <button onClick={() => setEditingDish(dish)} className="w-full text-neutral-500 font-bold hover:text-blue-600 bg-neutral-50 hover:bg-blue-50 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors">
+                    <button onClick={() => setEditingDish(dish)} className="w-full text-neutral-500 dark:text-neutral-400 font-bold hover:text-blue-600 dark:hover:text-blue-400 bg-neutral-50 dark:bg-obsidian-900/40 hover:bg-blue-50 dark:hover:bg-blue-900/20 py-3 rounded-xl flex items-center justify-center gap-2 transition-colors border border-neutral-200 dark:border-neutral-700/50">
                       <Edit2 size={16} /> Edit Asset
                     </button>
                   </div>
                 ))}
                 {dishes.filter(d => d.restId === activeRestId).length === 0 && (
-                   <p className="text-neutral-500 col-span-2 text-center py-10">No dishes yet. Add one to get started.</p>
+                   <p className="text-neutral-500 dark:text-neutral-400 col-span-2 text-center py-10">No dishes yet. Add one to get started.</p>
                 )}
               </div>
             </motion.div>
@@ -483,7 +482,7 @@ export default function VendorDashboardPage() {
             <motion.div key="menu-edit" initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -20 }} className="absolute inset-0 overflow-y-auto p-8 max-w-3xl mx-auto w-full">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-black">{editingDish.id ? 'Edit Dish' : 'Create New Dish'}</h2>
-                <button onClick={() => { setEditingDish(null); setScanState('idle'); setProgress(0); if(cameraStream) cameraStream.getTracks().forEach(t=>t.stop()); setCameraOpen(false); }} className="p-2 bg-neutral-200 rounded-full hover:bg-neutral-300 transition-colors"><X size={20} /></button>
+                <button onClick={() => { setEditingDish(null); setScanState('idle'); setProgress(0); if(cameraStream) cameraStream.getTracks().forEach(t=>t.stop()); setCameraOpen(false); }} className="p-2 bg-neutral-200 dark:bg-obsidian-700 rounded-full hover:bg-neutral-300 dark:hover:bg-obsidian-600 transition-colors text-neutral-700 dark:text-neutral-300"><X size={20} /></button>
               </div>
 
               {/* Live Camera Capture Overlay */}
@@ -505,9 +504,9 @@ export default function VendorDashboardPage() {
               )}
 
               {scanState !== 'idle' && (
-                <div className={`rounded-3xl p-8 mb-8 text-white relative overflow-hidden shadow-2xl ${scanState === 'error' ? 'bg-red-900' : 'bg-neutral-900'}`}>
-                  {scanState !== 'complete' && scanState !== 'error' && <div className="absolute inset-0 bg-blue-600/20 animate-pulse" />}
-                  {scanState === 'error' && <div className="absolute inset-0 bg-red-800/30" />}
+                <div className={`rounded-3xl p-8 mb-8 relative overflow-hidden shadow-sm ${scanState === 'error' ? 'bg-red-50 dark:bg-red-900/40 border border-red-200 dark:border-red-900/50 text-red-900 dark:text-red-100' : 'bg-neutral-100 dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 text-neutral-900 dark:text-white'}`}>
+                  {scanState !== 'complete' && scanState !== 'error' && <div className="absolute inset-0 bg-blue-500/10 dark:bg-blue-600/20 animate-pulse" />}
+                  {scanState === 'error' && <div className="absolute inset-0 bg-red-500/5 dark:bg-red-800/30" />}
                   <div className="relative z-10 flex flex-col items-center justify-center py-6 text-center">
                     {scanState === 'uploading'  && <Upload  className="mb-4 text-blue-400 animate-bounce" size={40} />}
                     {scanState === 'scanning'   && <Camera  className="mb-4 text-purple-400" size={40} />}
@@ -516,18 +515,18 @@ export default function VendorDashboardPage() {
                     {scanState === 'complete'   && <CheckCircle2 className="mb-4 text-emerald-500" size={48} />}
                     {scanState === 'error'      && <XCircle className="mb-4 text-red-400" size={48} />}
                     <h3 className={`text-xl font-black ${
-                      scanState === 'complete' ? 'text-emerald-400' 
-                      : scanState === 'error' ? 'text-red-300'
-                      : 'text-white'
+                      scanState === 'complete' ? 'text-emerald-600 dark:text-emerald-400' 
+                      : scanState === 'error' ? 'text-red-700 dark:text-red-300'
+                      : 'text-neutral-900 dark:text-white'
                     }`}>
                       {scanState === 'error' ? '3D Generation Failed' : (scanStageLabel || 'Processing...')}
                     </h3>
                     {scanState === 'error' && (
                       <>
-                        <p className="text-red-300/80 text-xs mt-2 max-w-xs px-2 break-words">{scanStageLabel}</p>
+                        <p className="text-red-600/80 dark:text-red-300/80 text-xs mt-2 max-w-xs px-2 break-words">{scanStageLabel}</p>
                         <button type="button"
                           onClick={() => { setScanState('idle'); setProgress(0); setScanStageLabel(''); }}
-                          className="mt-5 flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-5 py-2.5 rounded-full transition-all">
+                          className="mt-5 flex items-center gap-2 bg-red-100 hover:bg-red-200 dark:bg-white/10 dark:hover:bg-white/20 border border-red-200 dark:border-white/20 text-red-800 dark:text-white font-bold px-5 py-2.5 rounded-full transition-all">
                           <RefreshCw size={15} /> Try Again
                         </button>
                       </>
@@ -561,27 +560,27 @@ export default function VendorDashboardPage() {
                   setScanState('idle');
                   setProgress(0);
                 }
-              }} className={`space-y-6 bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm transition-opacity ${scanState !== 'idle' && scanState !== 'complete' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
+              }} className={`space-y-6 bg-white dark:bg-obsidian-900 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm transition-opacity ${scanState !== 'idle' && scanState !== 'complete' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-2">Dish Name</label>
-                    <input type="text" required value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
+                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Dish Name</label>
+                    <input type="text" required value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-blue-500" />
                   </div>
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-2">Price ($)</label>
-                    <input type="number" step="0.01" required value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
+                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Price ($)</label>
+                    <input type="number" step="0.01" required value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-blue-500" />
                   </div>
                 </div>
                 
                 <div>
-                  <label className="block text-sm font-bold text-neutral-700 mb-2">Description</label>
-                  <textarea required value={editingDish.description} onChange={e => setEditingDish({...editingDish, description: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500 h-24"></textarea>
+                  <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Description</label>
+                  <textarea required value={editingDish.description} onChange={e => setEditingDish({...editingDish, description: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-blue-500 h-24"></textarea>
                 </div>
 
                 {/* ── Video Upload → 3D Model Section ── */}
                 <div>
-                  <label className="block text-sm font-bold text-neutral-700 mb-3 flex justify-between items-end">
+                  <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-3 flex justify-between items-end">
                     <span className="flex items-center gap-2"><Film size={16} className="text-blue-600" /> Generate 3D AR Model</span>
                     <div className="flex gap-2">
                       {/* Hidden inputs */}
@@ -611,18 +610,18 @@ export default function VendorDashboardPage() {
                         const file = e.dataTransfer.files?.[0];
                         if (file && file.type.startsWith('video/')) startVideoProcessing(file);
                       }}
-                      className="w-full border-2 border-dashed border-blue-300 bg-blue-50/50 hover:bg-blue-100/60 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
+                      className="w-full border-2 border-dashed border-blue-300 dark:border-blue-700 bg-blue-50/50 dark:bg-blue-900/10 hover:bg-blue-100/60 dark:hover:bg-blue-900/20 rounded-2xl p-8 flex flex-col items-center justify-center cursor-pointer transition-all group"
                     >
-                      <div className="w-16 h-16 bg-blue-100 group-hover:bg-blue-200 rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
-                        <Video size={32} className="text-blue-600" />
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/40 group-hover:bg-blue-200 dark:group-hover:bg-blue-900/60 rounded-2xl flex items-center justify-center mb-4 transition-colors shadow-sm">
+                        <Video size={32} className="text-blue-600 dark:text-blue-400" />
                       </div>
-                      <p className="font-black text-neutral-800 text-base mb-1">Upload Dish Video</p>
-                      <p className="text-xs text-neutral-500 text-center max-w-xs leading-relaxed">
+                      <p className="font-black text-neutral-800 dark:text-pearl text-base mb-1">Upload Dish Video</p>
+                      <p className="text-xs text-neutral-500 dark:text-neutral-400 text-center max-w-xs leading-relaxed">
                         Record a short video rotating around the dish. We'll extract frames and build a photorealistic 3D AR model automatically.
                       </p>
                       <div className="flex items-center gap-4 mt-4">
-                        <span className="text-[10px] font-bold text-blue-600 bg-blue-100 px-3 py-1 rounded-full uppercase tracking-wider">MP4 · MOV · WebM</span>
-                        <span className="text-[10px] font-bold text-neutral-400">or drag & drop</span>
+                        <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/40 px-3 py-1 rounded-full uppercase tracking-wider">MP4 · MOV · WebM</span>
+                        <span className="text-[10px] font-bold text-neutral-400 dark:text-neutral-500">or drag &amp; drop</span>
                       </div>
                     </div>
                   )}
@@ -630,15 +629,15 @@ export default function VendorDashboardPage() {
                   {/* 3D Preview when model exists */}
                   {editingDish.modelUrl && (
                     <div className="relative">
-                      <div className="rounded-2xl overflow-hidden border border-neutral-200 bg-neutral-100 h-64 relative shadow-inner">
+                      <div className="rounded-2xl overflow-hidden border border-neutral-200 dark:border-neutral-700/50 bg-neutral-100 dark:bg-obsidian-900 h-64 relative shadow-inner">
                         <model-viewer src={editingDish.modelUrl} auto-rotate camera-controls shadow-intensity="1" style={{width: '100%', height: '100%', backgroundColor: 'transparent'}}></model-viewer>
-                        <div className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-neutral-800 text-[10px] px-3 py-1 rounded-full font-black shadow-sm uppercase tracking-wider flex items-center gap-1"><Box size={10}/> 3D Preview</div>
+                        <div className="absolute top-3 left-3 bg-white/90 dark:bg-obsidian-800/90 backdrop-blur-sm text-neutral-800 dark:text-pearl text-[10px] px-3 py-1 rounded-full font-black shadow-sm uppercase tracking-wider flex items-center gap-1"><Box size={10}/> 3D Preview</div>
                       </div>
                       <div className="flex gap-2 mt-3">
-                        <button type="button" onClick={() => videoInputRef.current?.click()} className="flex-1 text-xs bg-blue-50 text-blue-700 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-blue-100 transition-colors border border-blue-200">
+                        <button type="button" onClick={() => videoInputRef.current?.click()} className="flex-1 text-xs bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-blue-100 dark:hover:bg-blue-900/40 transition-colors border border-blue-200 dark:border-blue-800/50">
                           <Video size={14} /> Re-upload Video
                         </button>
-                        <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})} className="text-xs bg-red-50 text-red-600 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-red-100 transition-colors border border-red-200">
+                        <button type="button" onClick={() => setEditingDish({...editingDish, modelUrl: ''})} className="text-xs bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 font-bold px-3 py-2.5 rounded-xl flex items-center justify-center gap-1.5 hover:bg-red-100 dark:hover:bg-red-900/40 transition-colors border border-red-200 dark:border-red-800/50">
                           <Trash2 size={14} /> Remove Model
                         </button>
                       </div>
@@ -646,31 +645,31 @@ export default function VendorDashboardPage() {
                   )}
                 </div>
 
-                <div className="pt-4 border-t border-neutral-100">
-                  <h3 className="font-bold text-neutral-800 mb-4">Nutritional Macros</h3>
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <h3 className="font-bold text-neutral-800 dark:text-pearl mb-4">Nutritional Macros</h3>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1">Calories (kcal)</label>
-                      <input type="number" required value={editingDish.macros?.calories || ''} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, calories: e.target.value}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Calories (kcal)</label>
+                      <input type="number" required value={editingDish.macros?.calories || ''} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, calories: e.target.value}})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1">Protein (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.protein || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, protein: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Protein (g)</label>
+                      <input type="number" required value={parseInt(editingDish.macros?.protein || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, protein: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1">Carbs (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.carbs || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, carbs: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Carbs (g)</label>
+                      <input type="number" required value={parseInt(editingDish.macros?.carbs || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, carbs: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
-                      <label className="block text-xs font-bold text-neutral-500 mb-1">Fat (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.fat || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, fat: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Fat (g)</label>
+                      <input type="number" required value={parseInt(editingDish.macros?.fat || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, fat: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                   </div>
                 </div>
 
                 {/* Allergens */}
-                <div className="pt-4 border-t border-neutral-100">
-                  <h3 className="font-bold text-neutral-800 mb-3 flex items-center gap-2"><AlertTriangle size={16} className="text-red-500" /> Allergen Warnings</h3>
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <h3 className="font-bold text-neutral-800 dark:text-pearl mb-3 flex items-center gap-2"><AlertTriangle size={16} className="text-red-500" /> Allergen Warnings</h3>
                   <div className="flex flex-wrap gap-2">
                     {ALLERGEN_OPTIONS.map(a => {
                       const active = editingDish.allergens?.includes(a);
@@ -678,7 +677,7 @@ export default function VendorDashboardPage() {
                         <button key={a} type="button"
                           onClick={() => setEditingDish(prev => ({ ...prev, allergens: active ? (prev.allergens||[]).filter(x=>x!==a) : [...(prev.allergens||[]), a] }))}
                           className={`px-3 py-1.5 rounded-xl text-sm font-bold border transition-all ${
-                            active ? 'bg-red-100 text-red-700 border-red-300' : 'bg-neutral-50 text-neutral-500 border-neutral-200 hover:border-neutral-300'
+                            active ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800/50' : 'bg-neutral-50 dark:bg-obsidian-900/40 text-neutral-500 dark:text-neutral-400 border-neutral-200 dark:border-neutral-700/50 hover:border-neutral-300 dark:hover:border-neutral-600'
                           }`}>{a}</button>
                       );
                     })}
@@ -703,25 +702,25 @@ export default function VendorDashboardPage() {
                 <p className="text-sm text-neutral-500 mb-6">Generate and print QR codes for each table.</p>
 
                 {/* Table Count Selector */}
-                <div className="bg-white dark:bg-obsidian-800 border border-neutral-200 rounded-2xl p-5 flex items-center justify-between mb-6 shadow-sm">
+                <div className="bg-white dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700/50 rounded-2xl p-5 flex items-center justify-between mb-6 shadow-sm">
                   <div>
-                    <p className="font-black text-neutral-800">Number of Tables</p>
-                    <p className="text-xs text-neutral-500 mt-0.5">One unique QR per table</p>
+                    <p className="font-black text-neutral-800 dark:text-pearl">Number of Tables</p>
+                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-0.5">One unique QR per table</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <button type="button" onClick={() => setTableCount(n => Math.max(1, n-1))}
-                      className="w-9 h-9 bg-neutral-100 hover:bg-neutral-200 rounded-full font-black flex items-center justify-center transition-colors">−</button>
+                      className="w-9 h-9 bg-neutral-100 dark:bg-obsidian-900/60 hover:bg-neutral-200 dark:hover:bg-obsidian-700 rounded-full font-black flex items-center justify-center transition-colors text-neutral-800 dark:text-pearl">−</button>
                     <span className="font-black text-xl w-8 text-center">{tableCount}</span>
                     <button type="button" onClick={() => setTableCount(n => Math.min(50, n+1))}
-                      className="w-9 h-9 bg-neutral-100 hover:bg-neutral-200 rounded-full font-black flex items-center justify-center transition-colors">+</button>
+                      className="w-9 h-9 bg-neutral-100 dark:bg-obsidian-900/60 hover:bg-neutral-200 dark:hover:bg-obsidian-700 rounded-full font-black flex items-center justify-center transition-colors text-neutral-800 dark:text-pearl">+</button>
                   </div>
                 </div>
 
                 {/* QR Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   {Array.from({ length: tableCount }, (_, i) => (
-                    <div key={i} className="bg-white dark:bg-obsidian-800 border border-neutral-200 rounded-2xl p-4 flex flex-col items-center shadow-sm">
-                      <p className="font-black text-xs text-neutral-500 mb-3 uppercase tracking-widest">Table {i + 1}</p>
+                    <div key={i} className="bg-white dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700/50 rounded-2xl p-4 flex flex-col items-center shadow-sm">
+                      <p className="font-black text-xs text-neutral-500 dark:text-neutral-400 mb-3 uppercase tracking-widest">Table {i + 1}</p>
                       <QRCodeSVG
                         value={`${window.location.origin}/scanner?restId=${activeRestId}&table=${i+1}`}
                         size={140}
@@ -751,16 +750,16 @@ export default function VendorDashboardPage() {
                 <div className="flex justify-between items-center mb-6">
                   <div>
                     <h2 className="text-2xl font-black mb-1">Employee Management</h2>
-                    <p className="text-sm text-neutral-500">Manage who has access to the POS and kitchen display.</p>
+                    <p className="text-sm text-neutral-500 dark:text-neutral-400">Manage who has access to the POS and kitchen display.</p>
                   </div>
                   <button className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 px-4 rounded-xl flex items-center gap-2 transition-colors">
                     <Plus size={16} /> Add Employee
                   </button>
                 </div>
 
-                <div className="bg-white dark:bg-obsidian-800 rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-obsidian-800 rounded-2xl border border-neutral-200 dark:border-neutral-700/50 overflow-hidden shadow-sm">
                   <table className="w-full text-left">
-                    <thead className="bg-neutral-50 border-b border-neutral-200 text-xs font-bold text-neutral-500 uppercase">
+                    <thead className="bg-neutral-50 dark:bg-obsidian-900/60 border-b border-neutral-200 dark:border-neutral-700/50 text-xs font-bold text-neutral-500 dark:text-neutral-400 uppercase">
                       <tr>
                         <th className="p-4">Name</th>
                         <th className="p-4">Role</th>
@@ -768,25 +767,25 @@ export default function VendorDashboardPage() {
                         <th className="p-4 text-right">Actions</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-neutral-100">
+                    <tbody className="divide-y divide-neutral-100 dark:divide-neutral-700/30">
                       {[
                         { name: 'Alice Johnson', role: 'Manager', pin: '****' },
                         { name: 'Bob Smith', role: 'Chef', pin: '****' },
                         { name: 'Charlie Davis', role: 'Waiter', pin: '****' }
                       ].map((staff, i) => (
-                        <tr key={i} className="hover:bg-neutral-50 transition-colors">
-                          <td className="p-4 font-bold text-neutral-800">{staff.name}</td>
+                        <tr key={i} className="hover:bg-neutral-50 dark:hover:bg-obsidian-900/40 transition-colors">
+                          <td className="p-4 font-bold text-neutral-800 dark:text-pearl">{staff.name}</td>
                           <td className="p-4">
                             <span className={`text-xs font-bold px-2 py-1 rounded-md ${
-                              staff.role === 'Manager' ? 'bg-purple-100 text-purple-700' :
-                              staff.role === 'Chef' ? 'bg-orange-100 text-orange-700' :
-                              'bg-blue-100 text-blue-700'
+                              staff.role === 'Manager' ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400' :
+                              staff.role === 'Chef' ? 'bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400' :
+                              'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                             }`}>{staff.role}</span>
                           </td>
-                          <td className="p-4 font-mono text-neutral-400">{staff.pin}</td>
+                          <td className="p-4 font-mono text-neutral-400 dark:text-neutral-500">{staff.pin}</td>
                           <td className="p-4 flex justify-end gap-2">
-                            <button className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"><Edit2 size={16}/></button>
-                            <button className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"><Trash2 size={16}/></button>
+                            <button className="p-2 text-neutral-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"><Edit2 size={16}/></button>
+                            <button className="p-2 text-neutral-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"><Trash2 size={16}/></button>
                           </td>
                         </tr>
                       ))}
@@ -804,28 +803,28 @@ export default function VendorDashboardPage() {
                 <h2 className="text-2xl font-black mb-1">Store Configuration</h2>
                 <p className="text-sm text-neutral-500 mb-6">Update your restaurant profile and billing details.</p>
 
-                <form onSubmit={handleSettingsSave} className="bg-white dark:bg-obsidian-800 rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6">
+                <form onSubmit={handleSettingsSave} className="bg-white dark:bg-obsidian-800 rounded-3xl border border-neutral-200 dark:border-neutral-700/50 p-8 shadow-sm space-y-6">
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-2">Restaurant Name</label>
-                    <input type="text" required value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Restaurant Name</label>
+                    <input type="text" required value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 mb-2">Cover Image URL</label>
-                    <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Cover Image URL</label>
+                    <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                     {settingsForm.cover && (
-                      <div className="w-full h-32 mt-3 rounded-xl bg-cover bg-center border border-neutral-200" style={{ backgroundImage: `url(${settingsForm.cover})` }}></div>
+                      <div className="w-full h-32 mt-3 rounded-xl bg-cover bg-center border border-neutral-200 dark:border-neutral-700/50" style={{ backgroundImage: `url(${settingsForm.cover})` }}></div>
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-6 pt-4 border-t border-neutral-100">
+                  <div className="grid grid-cols-2 gap-6 pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
                     <div>
-                      <label className="block text-sm font-bold text-neutral-700 mb-2">Tax Rate (%)</label>
-                      <input type="number" step="0.1" required value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                      <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Tax Rate (%)</label>
+                      <input type="number" step="0.1" required value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                     </div>
                     <div>
-                      <label className="block text-sm font-bold text-neutral-700 mb-2">Accept Cash on Table</label>
-                      <select value={settingsForm.acceptCash} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500">
+                      <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Accept Cash on Table</label>
+                      <select value={settingsForm.acceptCash} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-emerald-500">
                         <option value="true">Yes</option>
                         <option value="false">No (Digital Only)</option>
                       </select>
