@@ -1,3 +1,5 @@
+import { unzipSync } from 'fflate';
+
 /**
  * KIRI Engine 3D Generation Service
  *
@@ -119,16 +121,33 @@ async function downloadKiriModel(serialize, token, onProgress) {
   if (!data.ok || data.code !== 0) throw new Error(data.msg || 'Failed to get download URL.');
   const modelUrl = data.data.modelUrl;
 
-  const glbRes = await fetch(modelUrl);
-  if (!glbRes.ok) throw new Error(`Failed to download GLB from KIRI CDN (${glbRes.status})`);
+  const zipRes = await fetch(modelUrl);
+  if (!zipRes.ok) throw new Error(`Failed to download ZIP from KIRI CDN (${zipRes.status})`);
 
-  const blob = await glbRes.blob();
-  if (!blob || blob.size < 500) throw new Error('Downloaded model is empty or corrupted.');
+  const arrayBuffer = await zipRes.arrayBuffer();
+  if (!arrayBuffer || arrayBuffer.byteLength < 500) throw new Error('Downloaded model is empty or corrupted.');
 
   onProgress(95, 'downloading');
 
-  const glbBlob = new Blob([blob], { type: 'model/gltf-binary' });
-  return URL.createObjectURL(glbBlob);
+  try {
+    // Unzip the downloaded array buffer
+    const unzipped = unzipSync(new Uint8Array(arrayBuffer));
+    
+    // Find the GLB file (could be named anything inside the zip)
+    const glbFilename = Object.keys(unzipped).find(name => 
+      name.toLowerCase().endsWith('.glb') || 
+      name.toLowerCase().endsWith('.gltf') || 
+      name.toLowerCase().endsWith('.obj')
+    );
+    
+    if (!glbFilename) throw new Error('No 3D model found inside the downloaded ZIP file.');
+    
+    const fileData = unzipped[glbFilename];
+    const glbBlob = new Blob([fileData], { type: 'model/gltf-binary' });
+    return URL.createObjectURL(glbBlob);
+  } catch (err) {
+    throw new Error('Failed to extract the 3D model from the ZIP file: ' + err.message);
+  }
 }
 
 // ── Public API ────────────────────────────────────────────────────
