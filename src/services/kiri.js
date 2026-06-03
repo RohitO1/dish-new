@@ -58,8 +58,13 @@ async function getKiriToken() {
 async function uploadVideoToKiri(videoFile, token, onProgress) {
   onProgress(5, 'uploading');
 
+  if (typeof token !== 'string' || token.length > 200) {
+    throw new Error('KIRI_API_KEY is too large or corrupted! If you are on Vercel, check your Environment Variables. You likely copy-pasted the entire .env file instead of just the key itself.');
+  }
+
   const formData = new FormData();
-  formData.append('videoFile', videoFile, videoFile.name || 'dish_scan.mp4');
+  // Enforce a short filename to prevent WAF multipart header limits
+  formData.append('videoFile', videoFile, 'dish_scan.mp4');
   formData.append('fileFormat', 'GLB');
   formData.append('calculateType', '2'); // 2 = Featureless Object Scan (essential for shiny food)
 
