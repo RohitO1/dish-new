@@ -3,17 +3,14 @@ import { unzipSync } from 'fflate';
 /**
  * KIRI Engine 3D Generation Service
  *
- * Generates 3D GLB models from dish videos using KIRI Engine's
- * Featureless Object Scan API — the best mode for shiny/glazed surfaces.
- *
- * Bypasses Vercel's 4.5MB serverless limit by securely fetching the API token
- * from our backend, then uploading the video DIRECTLY from the browser to KIRI.
+ * All KIRI API calls are routed through Vercel serverless proxy functions
+ * (/api/kiri/upload, /api/kiri/status, /api/kiri/download) so the browser
+ * never directly contacts api.kiriengine.app — eliminating all CORS errors.
  */
 
 const DEMO_MODEL    = 'https://modelviewer.dev/shared-assets/models/Astronaut.glb';
-const KIRI_BASE     = 'https://api.kiriengine.app/api/v1/open';
-const POLL_INTERVAL = 8000;   // 8 seconds between status polls (KIRI recommendation)
-const MAX_POLLS     = 150;    // 150 × 8s = 20 minutes max wait
+const POLL_INTERVAL = 8000;   // 8 seconds between polls
+const MAX_POLLS     = 150;    // 150 × 8s = 20 min max
 
 const KIRI_STATUS = {
   UPLOADING:  -1,
@@ -24,73 +21,39 @@ const KIRI_STATUS = {
   EXPIRED:     4,
 };
 
-// --- Shared Token Cache ---
-let cachedToken = null;
-
-async function getKiriToken() {
-  if (cachedToken) return cachedToken;
-  try {
-    const res = await fetch('/api/kiri/token');
-    
-    // Check if we hit the Vite dev server fallback (which returns HTML instead of JSON)
-    const contentType = res.headers.get('content-type');
-    if (!contentType || !contentType.includes('application/json')) {
-      if (import.meta.env.VITE_KIRI_API_KEY) {
-        cachedToken = import.meta.env.VITE_KIRI_API_KEY;
-        return cachedToken;
-      }
-      throw new Error('Local dev error: The backend /api/kiri/token route is not running. Please run `vercel dev` or add VITE_KIRI_API_KEY to your .env file.');
-    }
-    
-    const data = await res.json();
-    if (!data.token) throw new Error(data.error || 'API token missing in backend configuration.');
-    
-    cachedToken = data.token;
-    return cachedToken;
-  } catch (err) {
-    if (err.message.includes('Local dev error')) throw err;
-    throw new Error(`Token fetch failed: ${err.message}`);
-  }
-}
-
 // ── Core pipeline ─────────────────────────────────────────────────
 
-async function uploadVideoToKiri(videoFile, token, onProgress) {
+async function uploadVideoToKiri(videoFile, onProgress) {
   onProgress(5, 'uploading');
 
-  if (typeof token !== 'string' || token.length > 200) {
-    throw new Error('KIRI_API_KEY is too large or corrupted! If you are on Vercel, check your Environment Variables. You likely copy-pasted the entire .env file instead of just the key itself.');
-  }
-
   const formData = new FormData();
-  // Enforce a short filename to prevent WAF multipart header limits
   formData.append('videoFile', videoFile, 'dish_scan.mp4');
-  formData.append('fileFormat', 'GLB');
-  formData.append('calculateType', '2'); // 2 = Featureless Object Scan (essential for shiny food)
 
-  const res = await fetch(`${KIRI_BASE}/photo/video`, {
+  // POST to our own Vercel proxy — no CORS, no browser restrictions
+  const res = await fetch('/api/kiri/upload', {
     method: 'POST',
-    headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
   });
 
   if (!res.ok) {
-    const errData = await res.json().catch(() => ({ msg: `HTTP ${res.status}` }));
-    throw new Error(errData.msg || `Upload failed (${res.status})`);
+    const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+    throw new Error(errData.error || errData.msg || `Upload failed (${res.status})`);
   }
 
   const data = await res.json();
   if (!data.ok) {
-    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success') ? data.msg : `KIRI API Error (Code: ${data.code})`;
+    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success')
+      ? data.msg
+      : `KIRI API Error (Code: ${data.code})`;
     throw new Error(errorMsg);
   }
-  
+
   console.log('[KIRI] Upload accepted. serialize:', data.data.serialize);
   onProgress(20, 'queuing');
   return data.data.serialize;
 }
 
-async function waitForKiriCompletion(serialize, token, onProgress) {
+async function waitForKiriCompletion(serialize, onProgress) {
   const progressStart = 25;
   const progressEnd   = 85;
 
@@ -99,9 +62,7 @@ async function waitForKiriCompletion(serialize, token, onProgress) {
 
     let data;
     try {
-      const res = await fetch(`${KIRI_BASE}/model/getStatus?serialize=${serialize}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      const res = await fetch(`/api/kiri/status?serialize=${serialize}`);
       if (!res.ok) continue;
       data = await res.json();
     } catch {
@@ -111,44 +72,43 @@ async function waitForKiriCompletion(serialize, token, onProgress) {
     if (!data.ok) throw new Error(data.msg || 'Status check failed.');
     const status = data.data.status;
 
-    let pct;
     if (status === KIRI_STATUS.UPLOADING) {
-      pct = 15; onProgress(pct, 'uploading');
+      onProgress(15, 'uploading');
     } else if (status === KIRI_STATUS.QUEUING) {
-      pct = 25; onProgress(pct, 'queuing');
+      onProgress(25, 'queuing');
     } else if (status === KIRI_STATUS.PROCESSING) {
       const fraction = Math.min(poll / (MAX_POLLS * 0.7), 1);
-      pct = Math.round(progressStart + fraction * (progressEnd - progressStart));
+      const pct = Math.round(progressStart + fraction * (progressEnd - progressStart));
       onProgress(pct, 'processing');
     } else if (status === KIRI_STATUS.READY) {
       onProgress(85, 'processing');
-      return; 
+      return;
     } else if (status === KIRI_STATUS.FAILED) {
-      throw new Error('KIRI Engine failed to process your video. Please try again with better lighting and a steadier camera.');
+      throw new Error('KIRI Engine failed to process the video. Please try with better lighting and a steadier camera.');
     } else if (status === KIRI_STATUS.EXPIRED) {
-      throw new Error('KIRI task expired before completing. Please try uploading again.');
+      throw new Error('KIRI task expired. Please try uploading again.');
     }
   }
 
-  throw new Error('3D generation timed out after 20 minutes. Please try with a shorter video.');
+  throw new Error('3D generation timed out after 20 minutes. Try a shorter video.');
 }
 
-async function downloadKiriModel(serialize, token, onProgress) {
+async function downloadKiriModel(serialize, onProgress) {
   onProgress(88, 'downloading');
 
-  const dlRes = await fetch(`${KIRI_BASE}/model/getModelZip?serialize=${serialize}`, {
-    headers: { 'Authorization': `Bearer ${token}` }
-  });
-  
+  const dlRes = await fetch(`/api/kiri/download?serialize=${serialize}`);
   if (!dlRes.ok) throw new Error(`Failed to get model download link (HTTP ${dlRes.status}).`);
-  
+
   const data = await dlRes.json();
   if (!data.ok) {
-    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success') ? data.msg : `KIRI API Error (Code: ${data.code})`;
+    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success')
+      ? data.msg
+      : `KIRI API Error (Code: ${data.code})`;
     throw new Error(errorMsg);
   }
   const modelUrl = data.data.modelUrl;
 
+  // Download the actual ZIP from KIRI's CDN (this is a plain CDN, no auth — no CORS issue)
   const zipRes = await fetch(modelUrl);
   if (!zipRes.ok) throw new Error(`Failed to download ZIP from KIRI CDN (${zipRes.status})`);
 
@@ -157,25 +117,17 @@ async function downloadKiriModel(serialize, token, onProgress) {
 
   onProgress(95, 'downloading');
 
-  try {
-    // Unzip the downloaded array buffer
-    const unzipped = unzipSync(new Uint8Array(arrayBuffer));
-    
-    // Find the GLB file (could be named anything inside the zip)
-    const glbFilename = Object.keys(unzipped).find(name => 
-      name.toLowerCase().endsWith('.glb') || 
-      name.toLowerCase().endsWith('.gltf') || 
-      name.toLowerCase().endsWith('.obj')
-    );
-    
-    if (!glbFilename) throw new Error('No 3D model found inside the downloaded ZIP file.');
-    
-    const fileData = unzipped[glbFilename];
-    const glbBlob = new Blob([fileData], { type: 'model/gltf-binary' });
-    return URL.createObjectURL(glbBlob);
-  } catch (err) {
-    throw new Error('Failed to extract the 3D model from the ZIP file: ' + err.message);
-  }
+  const unzipped = unzipSync(new Uint8Array(arrayBuffer));
+  const glbFilename = Object.keys(unzipped).find(name =>
+    name.toLowerCase().endsWith('.glb') ||
+    name.toLowerCase().endsWith('.gltf') ||
+    name.toLowerCase().endsWith('.obj')
+  );
+
+  if (!glbFilename) throw new Error('No 3D model found inside the downloaded ZIP file.');
+
+  const glbBlob = new Blob([unzipped[glbFilename]], { type: 'model/gltf-binary' });
+  return URL.createObjectURL(glbBlob);
 }
 
 // ── Public API ────────────────────────────────────────────────────
@@ -187,10 +139,9 @@ export async function generateModelFromVideo(videoFile, onProgress = () => {}) {
   }
 
   try {
-    const token = await getKiriToken();
-    const serialize = await uploadVideoToKiri(videoFile, token, onProgress);
-    await waitForKiriCompletion(serialize, token, onProgress);
-    const blobUrl = await downloadKiriModel(serialize, token, onProgress);
+    const serialize = await uploadVideoToKiri(videoFile, onProgress);
+    await waitForKiriCompletion(serialize, onProgress);
+    const blobUrl = await downloadKiriModel(serialize, onProgress);
     onProgress(100, 'success');
     return blobUrl;
   } catch (err) {
@@ -200,7 +151,7 @@ export async function generateModelFromVideo(videoFile, onProgress = () => {}) {
 }
 
 export async function generateModelFromImage(imageFile, onProgress = () => {}) {
-  console.warn('[KIRI] Image-to-3D not supported by KIRI. Returning demo.');
+  console.warn('[KIRI] Image-to-3D not supported. Returning demo.');
   onProgress(10, 'uploading');
   await new Promise(r => setTimeout(r, 500));
   onProgress(50, 'processing');
