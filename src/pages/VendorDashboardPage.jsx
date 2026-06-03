@@ -174,7 +174,12 @@ export default function VendorDashboardPage() {
       });
       await finalizeGlbResult(glbResult);
     } catch (err) {
-      const msg = err?.message || 'Unknown error';
+      let msg = err?.message || 'Unknown error';
+      // Specific check for CORS / Adblocker / Browser blocks which hide the HTTP status and throw 'Failed to fetch'
+      if (msg === 'Failed to fetch' || msg.includes('Failed to fetch')) {
+        msg = 'Browser Blocked Request (Failed to fetch): Please disable your Adblocker, turn off Brave Shields, or check your internet connection. Kiri Engine blocks requests from some privacy extensions.';
+      }
+      
       console.error('[AI 3D Video] Error:', err);
       setScanState('error');
       setProgress(0);
