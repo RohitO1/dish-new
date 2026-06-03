@@ -35,8 +35,7 @@ export default function MenuPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen pb-24 overflow-hidden"
-      style={{ background: '#0B0C10' }}>
+      className="flex flex-col h-screen overflow-hidden bg-neutral-50 dark:bg-obsidian-900 text-neutral-900 dark:text-pearl">
 
       {/* ── Hero Banner ── */}
       <div className="h-60 bg-cover bg-center relative rounded-b-[2.5rem] overflow-hidden shadow-2xl shrink-0"
@@ -87,14 +86,7 @@ export default function MenuPage() {
           <Search size={15} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-600" />
           <input value={search} onChange={e => setSearch(e.target.value)}
             placeholder="Search signature dishes..."
-            className="w-full pl-10 pr-4 py-3.5 rounded-2xl text-sm font-sans placeholder:text-neutral-700 focus:outline-none transition-all"
-            style={{
-              background: 'rgba(255,255,255,0.04)',
-              border: '1px solid rgba(255,255,255,0.07)',
-              color: '#FDFBF7',
-            }}
-            onFocus={e => { e.target.style.borderColor = 'rgba(212,175,55,0.3)'; }}
-            onBlur={e => { e.target.style.borderColor = 'rgba(255,255,255,0.07)'; }}
+            className="w-full pl-10 pr-4 py-3.5 rounded-2xl text-sm font-sans text-neutral-900 dark:text-pearl bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 placeholder:text-neutral-500 dark:placeholder:text-neutral-700 focus:outline-none focus:border-champagne-500 transition-all"
           />
         </div>
       </div>

@@ -10,7 +10,7 @@ import { generateModelFromImage, generateModelFromVideo } from '../services/trip
 
 export default function VendorDashboardPage() {
   const navigate = useNavigate();
-  const { orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus, dishes, restaurants, addDish, updateDish, user, setUser, updateRestaurant, supabaseUser, setActiveRestId, isInitializing } = useAppContext();
+  const { orders, activeRestId, vendorTab, setVendorTab, updateOrderStatus, dishes, restaurants, addDish, updateDish, user, setUser, updateRestaurant, supabaseUser, setActiveRestId, isInitializing, theme, toggleTheme } = useAppContext();
   const { t } = useTranslation();
 
   // Auth and Onboarding Guards
@@ -125,7 +125,7 @@ export default function VendorDashboardPage() {
       if (!prev) return prev;
       const autoTags = prev.tags?.length ? prev.tags : ['High Protein', 'Gluten Free', 'AI Generated'];
       const autoMacros = (prev.macros && prev.macros.calories) ? prev.macros : { calories: '350', protein: '25g', carbs: '15g', fat: '12g' };
-      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed beautifully using Tripo3D API's AI model generator.";
+      const autoDesc = prev.description ? prev.description : "A visually stunning dish, reconstructed in 3D using Hugging Face TripoSR AI.";
       return { ...prev, modelUrl: finalUrl, description: autoDesc, macros: autoMacros, tags: autoTags };
     });
   }, []);
@@ -278,29 +278,32 @@ export default function VendorDashboardPage() {
   const todayRevenue = completed.reduce((sum, o) => sum + o.total, 0);
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden font-sans" style={{ background: '#0B0C10', color: '#FDFBF7' }}>
+    <div className="flex flex-col h-screen overflow-hidden font-sans bg-neutral-50 dark:bg-obsidian-900 text-neutral-900 dark:text-pearl">
       {/* Header */}
-      <div className="p-4 flex justify-between items-center z-10 shrink-0"
-        style={{ background: 'rgba(11,12,16,0.98)', borderBottom: '1px solid rgba(212,175,55,0.12)', backdropFilter: 'blur(20px)' }}>
+      <div className="p-4 flex justify-between items-center z-10 shrink-0 bg-white/95 dark:bg-obsidian-900/98 backdrop-blur-xl border-b border-neutral-200 dark:border-champagne-500/10">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl" style={{ background: 'linear-gradient(135deg,rgba(212,175,55,0.2),rgba(212,175,55,0.05))', border: '1px solid rgba(212,175,55,0.3)' }}>
-            <LayoutDashboard size={20} style={{ color: '#D4AF37' }} />
+          <div className="p-2.5 rounded-xl bg-champagne-500/10 dark:bg-champagne-500/20 border border-champagne-500/20 dark:border-champagne-500/30">
+            <LayoutDashboard size={20} className="text-champagne-600 dark:text-champagne-500" />
           </div>
           <div>
-            <h1 className="font-serif font-bold text-lg leading-tight flex items-center gap-2 text-pearl">
+            <h1 className="font-serif font-bold text-lg leading-tight flex items-center gap-2 text-neutral-900 dark:text-pearl">
               {currentRestaurant?.name || 'Dashboard'}
             </h1>
-            <p className="text-xs font-sans flex items-center gap-1.5" style={{ color: '#6B7280' }}>
-              <span className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ background: '#D4AF37' }}></span>
+            <p className="text-xs font-sans flex items-center gap-1.5 text-neutral-500 dark:text-neutral-400">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse bg-champagne-500"></span>
               {user?.email || 'Cloud Synced'}
             </p>
           </div>
         </div>
-        <button onClick={handleLogout}
-          className="text-xs font-sans font-medium px-4 py-2 rounded-xl transition-all flex items-center gap-2"
-          style={{ background: 'rgba(239,68,68,0.1)', color: '#F87171', border: '1px solid rgba(239,68,68,0.2)' }}>
-          <LogOut size={14} /> Sign Out
-        </button>
+        <div className="flex items-center gap-3">
+          <button onClick={toggleTheme} className="p-2 rounded-xl bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-200 dark:hover:bg-neutral-700 transition-colors">
+            {theme === 'dark' ? <span title="Switch to Premium Light Mode">☀️</span> : <span title="Switch to Dark Luxury Mode">🌙</span>}
+          </button>
+          <button onClick={handleLogout}
+            className="text-xs font-sans font-medium px-4 py-2 rounded-xl transition-all flex items-center gap-2 bg-neutral-100 dark:bg-white/5 text-neutral-700 dark:text-pearl hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-500/20 dark:hover:text-red-400">
+            <LogOut size={14} /> Sign Out
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -331,7 +334,7 @@ export default function VendorDashboardPage() {
             <motion.div key="orders" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="absolute inset-0 overflow-x-auto p-6 flex gap-6 items-start">
               
               {/* Pending Verification Lane (special) */}
-              <div className="w-80 shrink-0 bg-white rounded-2xl border border-amber-200 shadow-sm flex flex-col max-h-full overflow-hidden">
+              <div className="w-80 shrink-0 bg-white dark:bg-obsidian-800 rounded-2xl border border-amber-200 dark:border-amber-900 shadow-sm flex flex-col max-h-full overflow-hidden">
                 <div className="p-4 bg-amber-50 border-b border-amber-200 font-black flex justify-between items-center">
                   <span>⏳ Verify Table</span>
                   <span className="bg-amber-200 text-amber-800 px-3 py-1 rounded-full text-xs">{pendingVerification.length}</span>
@@ -339,7 +342,7 @@ export default function VendorDashboardPage() {
                 <div className="p-4 space-y-4 overflow-y-auto bg-amber-50/20 flex-1">
                   <AnimatePresence>
                     {pendingVerification.map(o => (
-                      <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className="bg-white border border-amber-200 rounded-xl p-4 shadow-sm">
+                      <motion.div layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} key={o.id} className="bg-white dark:bg-obsidian-800 border border-amber-200 rounded-xl p-4 shadow-sm">
                         <div className="flex justify-between mb-3">
                           <span className="font-mono font-black text-sm text-neutral-800">{getOrderNumber(o)}</span>
                           <span className="text-[10px] font-black text-amber-700 bg-amber-100 px-2 py-0.5 rounded-md">{o.orderType === 'dine_in' ? 'DINE-IN' : 'PRE-ORDER'}</span>
@@ -417,18 +420,18 @@ export default function VendorDashboardPage() {
             <motion.div key="analytics" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute inset-0 overflow-y-auto p-8 max-w-5xl mx-auto w-full">
               <h2 className="text-2xl font-black mb-8">{t('vendor.analytics')}</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div className="bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
+                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-10 -top-10 w-40 h-40 bg-emerald-50 rounded-full group-hover:scale-110 transition-transform"></div>
                   <p className="text-sm text-neutral-500 font-bold mb-2 relative z-10">{t('vendor.grossRevenue')}</p>
                   <h3 className="text-5xl font-black text-emerald-600 relative z-10">${todayRevenue.toFixed(2)}</h3>
                 </div>
-                <div className="bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
+                <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm relative overflow-hidden group">
                   <div className="absolute -right-10 -top-10 w-40 h-40 bg-blue-50 rounded-full group-hover:scale-110 transition-transform"></div>
                   <p className="text-sm text-neutral-500 font-bold mb-2 relative z-10">{t('vendor.ordersCompleted')}</p>
                   <h3 className="text-5xl font-black text-blue-600 relative z-10">{completed.length}</h3>
                 </div>
               </div>
-              <div className="bg-white p-8 rounded-3xl border border-neutral-200 shadow-sm">
+              <div className="bg-white dark:bg-obsidian-800 p-8 rounded-3xl border border-neutral-200 shadow-sm">
                 <h3 className="font-black text-lg border-b border-neutral-100 pb-4 mb-4">{t('vendor.recentTransactions')}</h3>
                 <div className="space-y-4">
                   {completed.slice(0, 5).map(o => (
@@ -454,7 +457,7 @@ export default function VendorDashboardPage() {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {dishes.filter(d => d.restId === activeRestId).map(dish => (
-                  <div key={dish.id} className="bg-white p-6 rounded-3xl border border-neutral-200 flex flex-col justify-between shadow-sm group hover:shadow-md transition-shadow">
+                  <div key={dish.id} className="bg-white dark:bg-obsidian-800 p-6 rounded-3xl border border-neutral-200 flex flex-col justify-between shadow-sm group hover:shadow-md transition-shadow">
                     <div className="flex gap-5 items-start mb-6">
                       <div className="w-20 h-20 bg-neutral-100 rounded-2xl flex items-center justify-center shrink-0 group-hover:bg-blue-50 transition-colors">
                         <Box size={32} className="text-neutral-400 group-hover:text-blue-500 transition-colors" />
@@ -490,10 +493,10 @@ export default function VendorDashboardPage() {
                   <div className="absolute inset-0 flex flex-col items-center justify-end p-6 gap-3">
                     <p className="text-white text-sm font-bold bg-black/50 px-4 py-2 rounded-full">Position dish in frame, then capture</p>
                     <div className="flex gap-4">
-                      <button type="button" onClick={() => { cameraStream?.getTracks().forEach(t=>t.stop()); setCameraStream(null); setCameraOpen(false); }} className="bg-white/20 text-white font-bold px-6 py-3 rounded-full">
+                      <button type="button" onClick={() => { cameraStream?.getTracks().forEach(t=>t.stop()); setCameraStream(null); setCameraOpen(false); }} className="bg-white dark:bg-obsidian-800/20 text-white font-bold px-6 py-3 rounded-full">
                         Cancel
                       </button>
-                      <button type="button" onClick={captureDishFrame} className="bg-white text-neutral-900 font-black px-8 py-3 rounded-full shadow-lg">
+                      <button type="button" onClick={captureDishFrame} className="bg-white dark:bg-obsidian-800 text-neutral-900 font-black px-8 py-3 rounded-full shadow-lg">
                         ✦ Capture & Generate 3D
                       </button>
                     </div>
@@ -563,17 +566,17 @@ export default function VendorDashboardPage() {
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-bold text-neutral-700 mb-2">Dish Name</label>
-                    <input type="text" required value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
+                    <input type="text" required value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
                   </div>
                   <div>
                     <label className="block text-sm font-bold text-neutral-700 mb-2">Price ($)</label>
-                    <input type="number" step="0.01" required value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
+                    <input type="number" step="0.01" required value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500" />
                   </div>
                 </div>
                 
                 <div>
                   <label className="block text-sm font-bold text-neutral-700 mb-2">Description</label>
-                  <textarea required value={editingDish.description} onChange={e => setEditingDish({...editingDish, description: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-blue-500 h-24"></textarea>
+                  <textarea required value={editingDish.description} onChange={e => setEditingDish({...editingDish, description: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-blue-500 h-24"></textarea>
                 </div>
 
                 {/* ── Video Upload → 3D Model Section ── */}
@@ -648,19 +651,19 @@ export default function VendorDashboardPage() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Calories (kcal)</label>
-                      <input type="number" required value={editingDish.macros?.calories || ''} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, calories: e.target.value}})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <input type="number" required value={editingDish.macros?.calories || ''} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, calories: e.target.value}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Protein (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.protein || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, protein: e.target.value + 'g'}})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <input type="number" required value={parseInt(editingDish.macros?.protein || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, protein: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Carbs (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.carbs || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, carbs: e.target.value + 'g'}})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <input type="number" required value={parseInt(editingDish.macros?.carbs || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, carbs: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                     <div>
                       <label className="block text-xs font-bold text-neutral-500 mb-1">Fat (g)</label>
-                      <input type="number" required value={parseInt(editingDish.macros?.fat || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, fat: e.target.value + 'g'}})} className="w-full bg-neutral-50 border border-neutral-200 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      <input type="number" required value={parseInt(editingDish.macros?.fat || 0)} onChange={e => setEditingDish({...editingDish, macros: {...editingDish.macros, fat: e.target.value + 'g'}})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                     </div>
                   </div>
                 </div>
@@ -700,7 +703,7 @@ export default function VendorDashboardPage() {
                 <p className="text-sm text-neutral-500 mb-6">Generate and print QR codes for each table.</p>
 
                 {/* Table Count Selector */}
-                <div className="bg-white border border-neutral-200 rounded-2xl p-5 flex items-center justify-between mb-6 shadow-sm">
+                <div className="bg-white dark:bg-obsidian-800 border border-neutral-200 rounded-2xl p-5 flex items-center justify-between mb-6 shadow-sm">
                   <div>
                     <p className="font-black text-neutral-800">Number of Tables</p>
                     <p className="text-xs text-neutral-500 mt-0.5">One unique QR per table</p>
@@ -717,7 +720,7 @@ export default function VendorDashboardPage() {
                 {/* QR Grid */}
                 <div className="grid grid-cols-2 gap-4">
                   {Array.from({ length: tableCount }, (_, i) => (
-                    <div key={i} className="bg-white border border-neutral-200 rounded-2xl p-4 flex flex-col items-center shadow-sm">
+                    <div key={i} className="bg-white dark:bg-obsidian-800 border border-neutral-200 rounded-2xl p-4 flex flex-col items-center shadow-sm">
                       <p className="font-black text-xs text-neutral-500 mb-3 uppercase tracking-widest">Table {i + 1}</p>
                       <QRCodeSVG
                         value={`${window.location.origin}/scanner?restId=${activeRestId}&table=${i+1}`}
@@ -755,7 +758,7 @@ export default function VendorDashboardPage() {
                   </button>
                 </div>
 
-                <div className="bg-white rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
+                <div className="bg-white dark:bg-obsidian-800 rounded-2xl border border-neutral-200 overflow-hidden shadow-sm">
                   <table className="w-full text-left">
                     <thead className="bg-neutral-50 border-b border-neutral-200 text-xs font-bold text-neutral-500 uppercase">
                       <tr>
@@ -801,15 +804,15 @@ export default function VendorDashboardPage() {
                 <h2 className="text-2xl font-black mb-1">Store Configuration</h2>
                 <p className="text-sm text-neutral-500 mb-6">Update your restaurant profile and billing details.</p>
 
-                <form onSubmit={handleSettingsSave} className="bg-white rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6">
+                <form onSubmit={handleSettingsSave} className="bg-white dark:bg-obsidian-800 rounded-3xl border border-neutral-200 p-8 shadow-sm space-y-6">
                   <div>
                     <label className="block text-sm font-bold text-neutral-700 mb-2">Restaurant Name</label>
-                    <input type="text" required value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                    <input type="text" required value={settingsForm.name} onChange={e => setSettingsForm({...settingsForm, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                   </div>
 
                   <div>
                     <label className="block text-sm font-bold text-neutral-700 mb-2">Cover Image URL</label>
-                    <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                    <input type="url" value={settingsForm.cover} onChange={e => setSettingsForm({...settingsForm, cover: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                     {settingsForm.cover && (
                       <div className="w-full h-32 mt-3 rounded-xl bg-cover bg-center border border-neutral-200" style={{ backgroundImage: `url(${settingsForm.cover})` }}></div>
                     )}
@@ -818,11 +821,11 @@ export default function VendorDashboardPage() {
                   <div className="grid grid-cols-2 gap-6 pt-4 border-t border-neutral-100">
                     <div>
                       <label className="block text-sm font-bold text-neutral-700 mb-2">Tax Rate (%)</label>
-                      <input type="number" step="0.1" required value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
+                      <input type="number" step="0.1" required value={settingsForm.taxRate} onChange={e => setSettingsForm({...settingsForm, taxRate: parseFloat(e.target.value)})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500" />
                     </div>
                     <div>
                       <label className="block text-sm font-bold text-neutral-700 mb-2">Accept Cash on Table</label>
-                      <select value={settingsForm.acceptCash} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})} className="w-full bg-neutral-50 border border-neutral-200 rounded-xl p-3 focus:outline-none focus:border-emerald-500">
+                      <select value={settingsForm.acceptCash} onChange={e => setSettingsForm({...settingsForm, acceptCash: e.target.value === 'true'})} className="w-full bg-neutral-50 dark:bg-obsidian-800 border border-neutral-200 dark:border-neutral-700 rounded-xl p-3 focus:outline-none focus:border-emerald-500">
                         <option value="true">Yes</option>
                         <option value="false">No (Digital Only)</option>
                       </select>

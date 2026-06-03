@@ -6,7 +6,7 @@
 
 @layer base {
   body {
-    @apply bg-obsidian-900 text-pearl font-sans antialiased selection:bg-champagne-500/30;
+    @apply bg-neutral-50 text-neutral-900 dark:bg-obsidian-900 dark:text-pearl font-sans antialiased selection:bg-champagne-500/30 transition-colors duration-300;
   }
   
   h1, h2, h3, h4, h5, h6 {

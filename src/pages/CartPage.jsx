@@ -59,7 +59,7 @@ export default function CartPage() {
 
   if (cart.length === 0) {
     return (
-      <div className="flex flex-col h-screen items-center justify-center pb-20" style={{ background: '#0B0C10' }}>
+      <div className="flex flex-col h-screen items-center justify-center pb-20 bg-neutral-50 dark:bg-obsidian-900 text-neutral-900 dark:text-pearl">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center">
           <div className="w-24 h-24 rounded-full flex items-center justify-center mb-6"
             style={{ background: 'rgba(212,175,55,0.08)', border: '1px solid rgba(212,175,55,0.2)' }}>
@@ -152,7 +152,7 @@ export default function CartPage() {
 
   if (step === 'success') {
     return (
-      <div className="flex flex-col h-screen pt-20 px-6" style={{ background: '#0B0C10' }}>
+      <div className="flex flex-col h-screen pt-20 px-6 bg-neutral-50 dark:bg-obsidian-900 text-neutral-900 dark:text-pearl">
         <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex flex-col items-center text-center space-y-5">
           <div className="w-24 h-24 rounded-full flex items-center justify-center"
             style={{ border: '2px solid rgba(212,175,55,0.5)', background: 'radial-gradient(circle, rgba(212,175,55,0.15), transparent)', boxShadow: '0 0 50px rgba(212,175,55,0.25)' }}>
@@ -183,7 +183,7 @@ export default function CartPage() {
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="flex flex-col h-screen pb-24" style={{ background: '#0B0C10' }}>
+      className="flex flex-col h-screen pb-24 bg-neutral-50 dark:bg-obsidian-900 text-neutral-900 dark:text-pearl">
       <div className="p-5 flex items-center gap-4 sticky top-0 z-10"
         style={{ background: 'rgba(11,12,16,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(212,175,55,0.08)' }}>
         <button onClick={handleBack}
@@ -334,14 +334,14 @@ export default function CartPage() {
                   <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-wider">Full Name</label>
                   <div className="relative">
                     <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
-                    <input type="text" value={contactDetails.name} onChange={e => setContactDetails({...contactDetails, name: e.target.value})} placeholder="e.g. John Doe" className="w-full bg-neutral-900/80 border border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
+                    <input type="text" value={contactDetails.name} onChange={e => setContactDetails({...contactDetails, name: e.target.value})} placeholder="e.g. John Doe" className="w-full bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
                   </div>
                 </div>
                 <div>
                   <label className="block text-xs font-bold text-neutral-400 mb-2 uppercase tracking-wider">Phone Number</label>
                   <div className="relative">
                     <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-neutral-500" />
-                    <input type="tel" value={contactDetails.phone} onChange={e => setContactDetails({...contactDetails, phone: e.target.value})} placeholder="+1 (555) 000-0000" className="w-full bg-neutral-900/80 border border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
+                    <input type="tel" value={contactDetails.phone} onChange={e => setContactDetails({...contactDetails, phone: e.target.value})} placeholder="+1 (555) 000-0000" className="w-full bg-white dark:bg-neutral-900/80 border border-neutral-200 dark:border-neutral-800 rounded-xl pl-11 pr-4 py-4 focus:outline-none focus:border-blue-500 transition-colors text-sm" />
                   </div>
                 </div>
               </div>
@@ -365,10 +365,10 @@ export default function CartPage() {
               <AnimatePresence>
                 {orderConf.method === 'Card' && (
                    <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className="p-5 bg-black/50 rounded-3xl space-y-4 border border-emerald-900/50">
-                      <input type="text" placeholder="Card Number" className="w-full bg-neutral-900 border border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
+                      <input type="text" placeholder="Card Number" className="w-full bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
                       <div className="flex gap-4">
-                        <input type="text" placeholder="MM/YY" className="w-1/2 bg-neutral-900 border border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
-                        <input type="text" placeholder="CVV" className="w-1/2 bg-neutral-900 border border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
+                        <input type="text" placeholder="MM/YY" className="w-1/2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
+                        <input type="text" placeholder="CVV" className="w-1/2 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-700 rounded-xl p-4 text-sm focus:border-emerald-500 focus:outline-none transition-colors" />
                       </div>
                    </motion.div>
                 )}

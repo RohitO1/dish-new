@@ -66,8 +66,8 @@ export default function VendorOnboardingPage() {
   };
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen bg-neutral-950 text-white flex flex-col items-center justify-center p-6">
-      <div className="w-full max-w-md bg-neutral-900/50 backdrop-blur-xl border border-neutral-800 rounded-[2.5rem] p-8 shadow-2xl">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-white flex flex-col items-center justify-center p-6">
+      <div className="w-full max-w-md bg-white/50 dark:bg-neutral-900/50 backdrop-blur-xl border border-neutral-200 dark:border-neutral-800 rounded-[2.5rem] p-8 shadow-2xl">
         <div className="w-16 h-16 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-2xl flex items-center justify-center mb-6 shadow-[0_0_30px_rgba(16,185,129,0.3)]">
           <Store size={32} className="text-white" />
         </div>
@@ -77,25 +77,25 @@ export default function VendorOnboardingPage() {
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">Restaurant Name</label>
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Restaurant Name</label>
             <input 
               type="text" 
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="e.g. The Quantum Cafe"
-              className="w-full bg-neutral-800/80 border border-neutral-700 rounded-xl px-4 py-4 focus:outline-none focus:border-emerald-500 transition-colors"
+              className="w-full bg-black/5 dark:bg-neutral-800/80 border border-black/10 dark:border-neutral-700 rounded-xl px-4 py-4 focus:outline-none focus:border-emerald-500 transition-colors"
               required
             />
           </div>
           
           <div>
-            <label className="block text-sm font-bold text-neutral-300 mb-2">Cover Image</label>
+            <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Cover Image</label>
             <div className="relative">
               <input 
                 type="file" 
                 accept="image/*"
                 onChange={handleImageUpload}
-                className="w-full bg-neutral-800/80 border border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500"
+                className="w-full bg-black/5 dark:bg-neutral-800/80 border border-black/10 dark:border-neutral-700 rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 transition-colors text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-emerald-600 file:text-white hover:file:bg-emerald-500"
               />
             </div>
           </div>

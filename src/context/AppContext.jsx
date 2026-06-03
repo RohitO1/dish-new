@@ -10,6 +10,28 @@ export const AppProvider = ({ children }) => {
   const [supabaseUser, setSupabaseUser] = useState(null);
   const [isInitializing, setIsInitializing] = useState(true);
 
+  // Theme State
+  const [theme, setTheme] = useState(() => {
+    try {
+      return localStorage.getItem('3dish_theme') || 'dark'; // Default to dark luxury
+    } catch {
+      return 'dark';
+    }
+  });
+
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    localStorage.setItem('3dish_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+  };
+
   // Core State
   const [user, setUser] = useState(() => {
     try {
@@ -410,6 +432,7 @@ export const AppProvider = ({ children }) => {
     favorites, toggleFavorite,
     nutritionHistory, saveNutritionRecord,
     userPreferences, updatePreferences,
+    theme, toggleTheme,
   };
 
   return (

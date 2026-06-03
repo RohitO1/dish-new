@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ChevronLeft, Globe, Target, Flame, Droplets, Leaf, Settings as SettingsIcon, LogOut, User, ShieldCheck, ChefHat } from 'lucide-react';
+import { ChevronLeft, Globe, Target, Flame, Droplets, Leaf, Settings as SettingsIcon, LogOut, User, ShieldCheck, ChefHat, Sun, Moon } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAppContext } from '../context/AppContext';
 import { useTranslation } from 'react-i18next';
@@ -9,7 +9,7 @@ import { supabase } from '../services/supabase';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const { userPreferences, updatePreferences, user, setUser, supabaseUser } = useAppContext();
+  const { userPreferences, updatePreferences, user, setUser, supabaseUser, theme, toggleTheme } = useAppContext();
   const { i18n, t } = useTranslation();
   const [localGoals, setLocalGoals] = useState(userPreferences.goals);
   const [saved, setSaved] = useState(false);
@@ -43,10 +43,13 @@ export default function SettingsPage() {
         <button onClick={() => navigate(-1)} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors">
           <ChevronLeft size={20} />
         </button>
-        <div>
+        <div className="flex-1">
           <h1 className="text-2xl font-black flex items-center gap-2"><SettingsIcon size={22}/> Settings</h1>
           <p className="text-xs text-neutral-500">Preferences & account</p>
         </div>
+        <button onClick={toggleTheme} className="w-10 h-10 bg-neutral-800 rounded-full flex items-center justify-center hover:bg-neutral-700 transition-colors">
+          {theme === 'dark' ? <Sun size={20} className="text-amber-400" /> : <Moon size={20} className="text-blue-400" />}
+        </button>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 pb-28 space-y-8 pt-6">
@@ -111,7 +114,7 @@ export default function SettingsPage() {
           <h2 className="font-black text-lg mb-4 flex items-center gap-2">
             <Target size={20} className="text-emerald-400" /> {t('settings.goals', 'Daily Dietary Goals')}
           </h2>
-          <form onSubmit={saveGoals} className="bg-neutral-900 border border-neutral-800 rounded-3xl p-5 space-y-4">
+          <form onSubmit={saveGoals} className="bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-3xl p-5 space-y-4">
             
             <div>
               <label className="flex items-center gap-2 text-xs font-bold text-neutral-400 mb-2">
@@ -119,7 +122,7 @@ export default function SettingsPage() {
               </label>
               <input type="number" required value={localGoals.calories}
                 onChange={e => setLocalGoals({...localGoals, calories: Number(e.target.value)})}
-                className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-white" />
+                className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white" />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
@@ -129,7 +132,7 @@ export default function SettingsPage() {
                 </label>
                 <input type="number" required value={localGoals.protein}
                   onChange={e => setLocalGoals({...localGoals, protein: Number(e.target.value)})}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-white text-center" />
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
               </div>
               <div>
                 <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 mb-2 uppercase">
@@ -137,7 +140,7 @@ export default function SettingsPage() {
                 </label>
                 <input type="number" required value={localGoals.carbs}
                   onChange={e => setLocalGoals({...localGoals, carbs: Number(e.target.value)})}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-white text-center" />
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
               </div>
               <div>
                 <label className="flex items-center gap-1 text-[10px] font-bold text-neutral-400 mb-2 uppercase">
@@ -145,7 +148,7 @@ export default function SettingsPage() {
                 </label>
                 <input type="number" required value={localGoals.fat}
                   onChange={e => setLocalGoals({...localGoals, fat: Number(e.target.value)})}
-                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-white text-center" />
+                  className="w-full bg-white dark:bg-neutral-950 border border-neutral-200 dark:border-neutral-800 rounded-xl p-3 focus:outline-none focus:border-emerald-500 text-neutral-900 dark:text-white text-center" />
               </div>
             </div>
 
@@ -168,7 +171,7 @@ export default function SettingsPage() {
         {/* App Info */}
         <div className="text-center text-xs text-neutral-700 pb-4 space-y-1">
           <p className="font-bold">3Dish · Next-Gen AR Dining</p>
-          <p>Powered by Supabase & Tripo3D</p>
+          <p>Powered by Supabase & Hugging Face TripoSR</p>
         </div>
 
       </div>
