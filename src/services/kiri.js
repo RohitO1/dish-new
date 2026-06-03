@@ -58,7 +58,10 @@ async function uploadVideoToKiri(videoFile, token, onProgress) {
   }
 
   const data = await res.json();
-  if (!data.ok || data.code !== 0) throw new Error(data.msg || 'KIRI upload rejected.');
+  if (!data.ok) {
+    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success') ? data.msg : `KIRI API Error (Code: ${data.code})`;
+    throw new Error(errorMsg);
+  }
   
   console.log('[KIRI] Upload accepted. serialize:', data.data.serialize);
   onProgress(20, 'queuing');
@@ -118,7 +121,10 @@ async function downloadKiriModel(serialize, token, onProgress) {
   if (!dlRes.ok) throw new Error(`Failed to get model download link (HTTP ${dlRes.status}).`);
   
   const data = await dlRes.json();
-  if (!data.ok || data.code !== 0) throw new Error(data.msg || 'Failed to get download URL.');
+  if (!data.ok) {
+    const errorMsg = (data.msg && data.msg.toLowerCase() !== 'success') ? data.msg : `KIRI API Error (Code: ${data.code})`;
+    throw new Error(errorMsg);
+  }
   const modelUrl = data.data.modelUrl;
 
   const zipRes = await fetch(modelUrl);
