@@ -29,12 +29,28 @@ let cachedToken = null;
 
 async function getKiriToken() {
   if (cachedToken) return cachedToken;
-  const res = await fetch('/api/kiri/token');
-  if (!res.ok) throw new Error('Failed to retrieve secure API token for 3D generation.');
-  const data = await res.json();
-  if (!data.token) throw new Error('API token missing in backend configuration.');
-  cachedToken = data.token;
-  return cachedToken;
+  try {
+    const res = await fetch('/api/kiri/token');
+    
+    // Check if we hit the Vite dev server fallback (which returns HTML instead of JSON)
+    const contentType = res.headers.get('content-type');
+    if (!contentType || !contentType.includes('application/json')) {
+      if (import.meta.env.VITE_KIRI_API_KEY) {
+        cachedToken = import.meta.env.VITE_KIRI_API_KEY;
+        return cachedToken;
+      }
+      throw new Error('Local dev error: The backend /api/kiri/token route is not running. Please run `vercel dev` or add VITE_KIRI_API_KEY to your .env file.');
+    }
+    
+    const data = await res.json();
+    if (!data.token) throw new Error(data.error || 'API token missing in backend configuration.');
+    
+    cachedToken = data.token;
+    return cachedToken;
+  } catch (err) {
+    if (err.message.includes('Local dev error')) throw err;
+    throw new Error(`Token fetch failed: ${err.message}`);
+  }
 }
 
 // ── Core pipeline ─────────────────────────────────────────────────
@@ -45,8 +61,9 @@ async function uploadVideoToKiri(videoFile, token, onProgress) {
   const formData = new FormData();
   formData.append('videoFile', videoFile, videoFile.name || 'dish_scan.mp4');
   formData.append('fileFormat', 'GLB');
+  formData.append('calculateType', '2'); // 2 = Featureless Object Scan (essential for shiny food)
 
-  const res = await fetch(`${KIRI_BASE}/featureless/video`, {
+  const res = await fetch(`${KIRI_BASE}/photo/video`, {
     method: 'POST',
     headers: { 'Authorization': `Bearer ${token}` },
     body: formData,
