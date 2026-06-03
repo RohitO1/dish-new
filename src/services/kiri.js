@@ -41,7 +41,7 @@ async function uploadVideoToKiri(videoFile, token, onProgress) {
   onProgress(5, 'uploading');
 
   const formData = new FormData();
-  formData.append('video', videoFile, videoFile.name || 'dish_scan.mp4');
+  formData.append('videoFile', videoFile, videoFile.name || 'dish_scan.mp4');
   formData.append('fileFormat', 'GLB');
 
   const res = await fetch(`${KIRI_BASE}/featureless/video`, {
