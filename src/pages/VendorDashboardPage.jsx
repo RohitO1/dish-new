@@ -415,14 +415,10 @@ export default function VendorDashboardPage() {
                 }
               }} className={`space-y-6 bg-white dark:bg-obsidian-900 p-8 rounded-3xl border border-neutral-200 dark:border-neutral-800 shadow-sm transition-opacity ${scanState !== 'idle' && scanState !== 'complete' ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
-                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Dish Name</label>
+                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Dish Name *</label>
                     <input type="text" required value={editingDish.name} onChange={e => setEditingDish({...editingDish, name: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-blue-500" />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-neutral-700 dark:text-neutral-300 mb-2">Price ($)</label>
-                    <input type="number" step="0.01" required value={editingDish.price} onChange={e => setEditingDish({...editingDish, price: e.target.value})} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-xl p-3 focus:outline-none focus:border-blue-500" />
                   </div>
                 </div>
                 
@@ -498,24 +494,22 @@ export default function VendorDashboardPage() {
                       <Plus size={14} /> Add Variant
                     </button>
                   </div>
-                  {(editingDish.sizes || []).map((variant, index) => (
+                  {(editingDish.sizes || editingDish.macros?.sizes || []).map((variant, index) => (
                     <div key={index} className="flex gap-4 mb-3 items-end">
                       <div className="flex-1">
-                        <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Size</label>
-                        <select value={variant.size} onChange={e => {
-                          const newSizes = [...(editingDish.sizes || [])];
+                        <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Size (e.g. Half, Full)</label>
+                        <input type="text" required placeholder="Size Name" value={variant.size} onChange={e => {
+                          const currentSizes = editingDish.sizes || editingDish.macros?.sizes || [];
+                          const newSizes = [...currentSizes];
                           newSizes[index].size = e.target.value;
                           setEditingDish({ ...editingDish, sizes: newSizes });
-                        }} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500">
-                          <option value="Regular">Regular</option>
-                          <option value="Medium">Medium</option>
-                          <option value="Large">Large</option>
-                        </select>
+                        }} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
                       </div>
                       <div className="flex-1">
                         <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Price ($)</label>
                         <input type="number" step="0.01" required value={variant.price} onChange={e => {
-                          const newSizes = [...(editingDish.sizes || [])];
+                          const currentSizes = editingDish.sizes || editingDish.macros?.sizes || [];
+                          const newSizes = [...currentSizes];
                           newSizes[index].price = e.target.value;
                           setEditingDish({ ...editingDish, sizes: newSizes });
                         }} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
