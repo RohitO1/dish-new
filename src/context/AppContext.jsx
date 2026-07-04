@@ -349,14 +349,14 @@ export const AppProvider = ({ children }) => {
       return null;
     }
     try {
+      const dishSizes = dishData.sizes || dishData.macros?.sizes || [];
       const formattedDish = { 
         name: dishData.name,
-        price: parseFloat(dishData.price) || (dishData.sizes && dishData.sizes[0] ? parseFloat(dishData.sizes[0].price) : 0),
+        price: parseFloat(dishData.price) || (dishSizes[0] ? parseFloat(dishSizes[0].price) : 0),
         description: dishData.description || '',
         model_url: dishData.modelUrl || '',
-        macros: { ...(dishData.macros || {}), sizes: dishData.sizes || [] },
+        macros: { ...(dishData.macros || {}), sizes: dishSizes },
         tags: dishData.tags || [],
-        sizes: dishData.sizes || [],
         rest_id: dishData.restId
       };
       
@@ -388,7 +388,6 @@ export const AppProvider = ({ children }) => {
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
       if (updates.macros !== undefined) dbUpdate.macros = updates.macros;
       if (updates.sizes !== undefined) {
-        dbUpdate.sizes = updates.sizes;
         const existingDish = dishes.find(d => d.id === dishId);
         dbUpdate.macros = { ...(updates.macros || existingDish?.macros || {}), sizes: updates.sizes };
       }
