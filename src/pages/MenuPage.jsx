@@ -158,17 +158,17 @@ export default function MenuPage() {
                 <div className="flex justify-between items-start mb-1">
                   <h3 className="font-serif font-bold text-base text-pearl leading-tight truncate pr-2">{dish.name}</h3>
                   <div className="flex flex-col items-end gap-1">
-                    {(dish.sizes?.length > 0 || dish.macros?.sizes?.length > 0) ? (
-                      (dish.sizes || dish.macros?.sizes).map((s, idx) => (
+                    {dish.sizes?.length > 0 ? (
+                      dish.sizes.map((s, idx) => (
                         <span key={idx} className="font-sans font-bold text-xs shrink-0 px-2 py-0.5 rounded-lg flex items-center gap-1"
                           style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
-                          <span className="opacity-70 text-[10px] uppercase tracking-wider">{s.size}:</span> ${Number(s.price).toFixed(2)}
+                          <span className="opacity-70 text-[10px] uppercase tracking-wider">{s.size}:</span> ₹{Number(s.price).toFixed(2)}
                         </span>
                       ))
                     ) : (
                       <span className="font-sans font-bold text-sm shrink-0 px-2.5 py-1 rounded-xl"
                         style={{ background: 'rgba(212,175,55,0.1)', color: '#D4AF37', border: '1px solid rgba(212,175,55,0.2)' }}>
-                        ${Number(dish.price).toFixed(2)}
+                        ₹{Number(dish.price).toFixed(2)}
                       </span>
                     )}
                   </div>

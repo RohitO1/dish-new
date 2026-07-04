@@ -155,11 +155,23 @@ export const AppProvider = ({ children }) => {
       const { data } = await supabase.from('dishes').select('*');
       if (data) {
         // Map snake_case from DB to camelCase for frontend
-        const mapped = data.map(d => ({
-          ...d,
-          modelUrl: d.model_url || d.modelUrl,
-          restId: d.rest_id || d.restId
-        }));
+        const mapped = data.map(d => {
+          // Safely parse macros — Supabase JSONB can occasionally return as string
+          let macros = d.macros;
+          if (typeof macros === 'string') {
+            try { macros = JSON.parse(macros); } catch { macros = {}; }
+          }
+          macros = macros || {};
+          // Promote macros.sizes to top-level `sizes` for easy access
+          const sizes = d.sizes || macros.sizes || [];
+          return {
+            ...d,
+            macros,
+            sizes,
+            modelUrl: d.model_url || d.modelUrl,
+            restId: d.rest_id || d.restId
+          };
+        });
         setDishes(mapped);
       }
     };
