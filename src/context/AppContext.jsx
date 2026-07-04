@@ -356,6 +356,7 @@ export const AppProvider = ({ children }) => {
         model_url: dishData.modelUrl || '',
         macros: dishData.macros || {},
         tags: dishData.tags || [],
+        sizes: dishData.sizes || [],
         rest_id: dishData.restId
       };
       
@@ -387,6 +388,7 @@ export const AppProvider = ({ children }) => {
       if (updates.model_url !== undefined) dbUpdate.model_url = updates.model_url;
       if (updates.macros !== undefined) dbUpdate.macros = updates.macros;
       if (updates.tags !== undefined) dbUpdate.tags = updates.tags;
+      if (updates.sizes !== undefined) dbUpdate.sizes = updates.sizes;
       if (updates.allergens !== undefined) dbUpdate.allergens = updates.allergens;
       if (updates.ingredients !== undefined) dbUpdate.ingredients = updates.ingredients;
       if (updates.restId !== undefined) dbUpdate.rest_id = updates.restId;

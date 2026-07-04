@@ -327,7 +327,7 @@ export default function VendorDashboardPage() {
             <motion.div key="menu" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="absolute inset-0 overflow-y-auto p-8 max-w-5xl mx-auto w-full">
               <div className="flex justify-between items-center mb-8">
                 <h2 className="text-2xl font-black">{t('vendor.manageAssets')}</h2>
-                <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', macros: { calories: '', protein: '', carbs: '', fat: '' }, tags: [] })} className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors">
+                <button onClick={() => setEditingDish({ name: '', price: '', description: '', modelUrl: '', macros: { calories: '', protein: '', carbs: '', fat: '' }, tags: [], sizes: [] })} className="bg-blue-600 text-white font-bold px-4 py-2 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-colors">
                   <Plus size={18} /> Add Dish
                 </button>
               </div>
@@ -489,6 +489,45 @@ export default function VendorDashboardPage() {
                       </div>
                     </div>
                   )}
+                </div>
+
+                <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-bold text-neutral-800 dark:text-pearl">Variants & Quantities (Optional)</h3>
+                    <button type="button" onClick={() => setEditingDish(prev => ({ ...prev, sizes: [...(prev.sizes || []), { size: 'Regular', price: '' }] }))} className="text-sm text-blue-600 dark:text-blue-400 font-bold flex items-center gap-1 hover:underline">
+                      <Plus size={14} /> Add Variant
+                    </button>
+                  </div>
+                  {(editingDish.sizes || []).map((variant, index) => (
+                    <div key={index} className="flex gap-4 mb-3 items-end">
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Size</label>
+                        <select value={variant.size} onChange={e => {
+                          const newSizes = [...(editingDish.sizes || [])];
+                          newSizes[index].size = e.target.value;
+                          setEditingDish({ ...editingDish, sizes: newSizes });
+                        }} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500">
+                          <option value="Regular">Regular</option>
+                          <option value="Medium">Medium</option>
+                          <option value="Large">Large</option>
+                        </select>
+                      </div>
+                      <div className="flex-1">
+                        <label className="block text-xs font-bold text-neutral-500 dark:text-neutral-400 mb-1">Price ($)</label>
+                        <input type="number" step="0.01" required value={variant.price} onChange={e => {
+                          const newSizes = [...(editingDish.sizes || [])];
+                          newSizes[index].price = e.target.value;
+                          setEditingDish({ ...editingDish, sizes: newSizes });
+                        }} className="w-full bg-neutral-50 dark:bg-obsidian-900/60 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-pearl rounded-lg p-2 focus:outline-none focus:border-blue-500" />
+                      </div>
+                      <button type="button" onClick={() => {
+                        const newSizes = editingDish.sizes.filter((_, i) => i !== index);
+                        setEditingDish({ ...editingDish, sizes: newSizes });
+                      }} className="p-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors mb-[1px]">
+                        <Trash2 size={16} />
+                      </button>
+                    </div>
+                  ))}
                 </div>
 
                 <div className="pt-4 border-t border-neutral-100 dark:border-neutral-700/50">
